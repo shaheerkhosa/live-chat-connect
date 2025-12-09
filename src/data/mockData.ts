@@ -217,3 +217,80 @@ export const mockConversations: Conversation[] = [
 mockConversations.forEach(conv => {
   conv.lastMessage = conv.messages[conv.messages.length - 1];
 });
+
+// Blog Analytics for Addiction Treatment Center SEO Tracking
+export interface BlogAnalytics {
+  id: string;
+  title: string;
+  slug: string;
+  url: string;
+  views: number;
+  leads: number;
+  publishedAt: Date;
+}
+
+export const mockBlogAnalytics: BlogAnalytics[] = [
+  {
+    id: 'blog-1',
+    title: 'Signs of Alcohol Addiction: When to Seek Help',
+    slug: '/blog/signs-of-alcohol-addiction',
+    url: 'https://example.com/blog/signs-of-alcohol-addiction',
+    views: 12450,
+    leads: 89,
+    publishedAt: new Date('2024-01-15'),
+  },
+  {
+    id: 'blog-2',
+    title: 'Understanding Opioid Withdrawal Symptoms',
+    slug: '/blog/opioid-withdrawal-symptoms',
+    url: 'https://example.com/blog/opioid-withdrawal-symptoms',
+    views: 9820,
+    leads: 67,
+    publishedAt: new Date('2024-02-01'),
+  },
+  {
+    id: 'blog-3',
+    title: 'How Long Does Drug Detox Take?',
+    slug: '/blog/how-long-drug-detox',
+    url: 'https://example.com/blog/how-long-drug-detox',
+    views: 8340,
+    leads: 54,
+    publishedAt: new Date('2024-02-10'),
+  },
+  {
+    id: 'blog-4',
+    title: 'Inpatient vs Outpatient Rehab: Which is Right for You?',
+    slug: '/blog/inpatient-vs-outpatient-rehab',
+    url: 'https://example.com/blog/inpatient-vs-outpatient-rehab',
+    views: 7650,
+    leads: 48,
+    publishedAt: new Date('2024-02-20'),
+  },
+  {
+    id: 'blog-5',
+    title: 'Family Support During Addiction Recovery',
+    slug: '/blog/family-support-addiction-recovery',
+    url: 'https://example.com/blog/family-support-addiction-recovery',
+    views: 6890,
+    leads: 41,
+    publishedAt: new Date('2024-03-01'),
+  },
+  {
+    id: 'blog-6',
+    title: 'Dual Diagnosis: Treating Addiction and Mental Health',
+    slug: '/blog/dual-diagnosis-treatment',
+    url: 'https://example.com/blog/dual-diagnosis-treatment',
+    views: 5420,
+    leads: 38,
+    publishedAt: new Date('2024-03-05'),
+  },
+  {
+    id: 'blog-7',
+    title: 'What to Expect at Your First AA Meeting',
+    slug: '/blog/first-aa-meeting-guide',
+    url: 'https://example.com/blog/first-aa-meeting-guide',
+    views: 4980,
+    leads: 29,
+    publishedAt: new Date('2024-03-08'),
+  },
+];
