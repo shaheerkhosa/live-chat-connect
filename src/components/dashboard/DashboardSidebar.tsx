@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
-  MessageSquare, 
+  MessageSquare,
   Users, 
   Globe, 
   Settings, 
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { mockAgents } from '@/data/mockData';
+import scaledBotLogo from '@/assets/scaled-bot-logo.png';
 
 interface SidebarItemProps {
   to: string;
@@ -94,10 +95,8 @@ export const DashboardSidebar = () => {
       )}>
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg chat-gradient flex items-center justify-center">
-              <MessageSquare className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg text-sidebar-foreground">LiveChat</span>
+            <img src={scaledBotLogo} alt="Scaled Bot" className="h-8 w-8 rounded-lg" />
+            <span className="font-bold text-lg text-sidebar-foreground">Scaled Bot</span>
           </div>
         )}
         <Button
