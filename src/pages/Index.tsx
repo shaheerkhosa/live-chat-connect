@@ -47,7 +47,7 @@ const Index = () => {
               <div className="h-9 w-9 rounded-lg chat-gradient flex items-center justify-center">
                 <MessageSquare className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="font-bold text-xl text-foreground">LiveChat</span>
+              <span className="font-bold text-xl text-foreground">Scaled Bot</span>
             </div>
             <div className="flex items-center gap-4">
               <Link to="/dashboard">
@@ -167,7 +167,7 @@ const Index = () => {
               <div className="h-8 w-8 rounded-lg chat-gradient flex items-center justify-center">
                 <MessageSquare className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="font-semibold text-foreground">LiveChat</span>
+              <span className="font-semibold text-foreground">Scaled Bot</span>
             </div>
             <p className="text-sm text-muted-foreground">
               Internal tool for live customer support
