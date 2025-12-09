@@ -211,6 +211,7 @@ const WidgetPreview = () => {
                       primaryColor={primaryColor}
                       agentName={agentName}
                       greeting={greeting}
+                      isPreview={true}
                     />
                   </div>
                 </div>

@@ -11,6 +11,7 @@ interface ChatWidgetProps {
   greeting?: string;
   agentName?: string;
   agentAvatar?: string;
+  isPreview?: boolean;
 }
 
 const mockMessages: Message[] = [
@@ -31,6 +32,7 @@ export const ChatWidget = ({
   greeting = "Hi there! 👋 How can I help you today?",
   agentName = "Support",
   agentAvatar,
+  isPreview = false,
 }: ChatWidgetProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>(mockMessages);
@@ -134,7 +136,7 @@ export const ChatWidget = ({
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 font-sans">
+    <div className={cn("z-50 font-sans", isPreview ? "relative" : "fixed bottom-4 right-4")}>
       {/* Incoming Call Notification */}
       {hasIncomingCall && (
         <div className="absolute bottom-20 right-0 w-72 bg-background rounded-xl shadow-lg border border-border p-4 animate-in slide-in-from-bottom-4">
