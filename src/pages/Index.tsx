@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Zap, Shield, Globe, ArrowRight, Code, Users, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ChatWidget } from '@/components/widget/ChatWidget';
+import { useAuth } from '@/hooks/useAuth';
 import scaledBotLogo from '@/assets/scaled-bot-logo.png';
 
 const features = [
@@ -38,6 +39,8 @@ const features = [
 ];
 
 const Index = () => {
+  const { user, isAdmin, signOut } = useAuth();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -49,15 +52,32 @@ const Index = () => {
               <span className="font-bold text-xl text-foreground">Scaled Bot</span>
             </div>
             <div className="flex items-center gap-4">
-              <Link to="/dashboard">
-                <Button variant="ghost">Dashboard</Button>
-              </Link>
-              <Link to="/widget-preview">
-                <Button variant="ghost">Widget Demo</Button>
-              </Link>
-              <Button className="chat-gradient text-primary-foreground hover:opacity-90">
-                Get Started
-              </Button>
+              {user ? (
+                <>
+                  <Link to="/dashboard">
+                    <Button variant="ghost">Dashboard</Button>
+                  </Link>
+                  {isAdmin && (
+                    <Link to="/admin">
+                      <Button variant="ghost">Admin</Button>
+                    </Link>
+                  )}
+                  <Button variant="outline" onClick={signOut}>
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/widget-preview">
+                    <Button variant="ghost">Widget Demo</Button>
+                  </Link>
+                  <Link to="/auth">
+                    <Button className="chat-gradient text-primary-foreground hover:opacity-90">
+                      Sign In
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

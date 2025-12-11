@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Search, Filter } from 'lucide-react';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { ConversationList } from '@/components/dashboard/ConversationList';
@@ -15,11 +15,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useAuth } from '@/hooks/useAuth';
 
 type FilterStatus = 'all' | 'active' | 'pending' | 'closed';
 
 const Dashboard = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
   const statusFilter = (searchParams.get('status') as FilterStatus) || 'all';
   
   const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
@@ -116,6 +125,14 @@ const Dashboard = () => {
   };
 
   const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
+
+  if (loading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-background">
