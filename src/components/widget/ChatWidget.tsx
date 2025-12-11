@@ -135,15 +135,23 @@ export const ChatWidget = ({
     }
   };
 
+  // Convert HSL string to ensure compatibility
+  const widgetStyle = {
+    '--widget-primary': primaryColor,
+  } as React.CSSProperties;
+
   return (
-    <div className={cn("z-50 font-sans", isPreview ? "relative" : "fixed bottom-4 right-4")}>
+    <div 
+      className={cn("z-50 font-sans", isPreview ? "relative" : "fixed bottom-4 right-4")}
+      style={widgetStyle}
+    >
       {/* Incoming Call Notification */}
       {hasIncomingCall && (
         <div className="absolute bottom-20 right-0 w-80 bg-card/95 backdrop-blur-lg rounded-3xl shadow-xl border border-border/50 p-5 animate-fade-in">
           <div className="flex items-center gap-4 mb-4">
             <div 
               className="h-12 w-12 rounded-full flex items-center justify-center animate-breathe"
-              style={{ backgroundColor: primaryColor }}
+              style={{ background: 'var(--widget-primary)' }}
             >
               <Video className="h-6 w-6 text-white" />
             </div>
@@ -180,7 +188,7 @@ export const ChatWidget = ({
           {/* Video Call Header */}
           <div 
             className="px-5 py-4 flex items-center justify-between"
-            style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)` }}
+            style={{ background: 'var(--widget-primary)' }}
           >
             <div className="flex items-center gap-3">
               <Video className="h-5 w-5 text-white" />
@@ -210,7 +218,7 @@ export const ChatWidget = ({
                   <>
                     <div 
                       className="h-20 w-20 rounded-full flex items-center justify-center animate-breathe"
-                      style={{ backgroundColor: primaryColor }}
+                      style={{ background: 'var(--widget-primary)' }}
                     >
                       <Phone className="h-10 w-10 text-white" />
                     </div>
@@ -298,12 +306,12 @@ export const ChatWidget = ({
           {/* Header */}
           <div 
             className="px-5 py-4 flex items-center justify-between relative overflow-hidden"
-            style={{ backgroundColor: primaryColor }}
+            style={{ background: 'var(--widget-primary)' }}
           >
             {/* Gradient overlay */}
             <div 
-              className="absolute inset-0 opacity-90"
-              style={{ background: `linear-gradient(135deg, ${primaryColor} 0%, transparent 100%)` }}
+              className="absolute inset-0 opacity-30"
+              style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%)' }}
             />
             <div className="flex items-center gap-3 relative z-10">
               <div className="h-11 w-11 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
@@ -361,7 +369,7 @@ export const ChatWidget = ({
                 {msg.senderType === 'agent' && (
                   <div 
                     className="h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
-                    style={{ backgroundColor: primaryColor }}
+                    style={{ background: 'var(--widget-primary)' }}
                   >
                     <MessageCircle className="h-4 w-4 text-white" />
                   </div>
@@ -374,7 +382,7 @@ export const ChatWidget = ({
                       : "bg-card rounded-3xl rounded-bl-lg border border-border/30"
                   )}
                   style={msg.senderType === 'visitor' ? { 
-                    background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`, 
+                    background: 'var(--widget-primary)', 
                     color: 'white' 
                   } : {}}
                 >
@@ -393,7 +401,7 @@ export const ChatWidget = ({
               <div className="flex gap-3 items-end animate-fade-in">
                 <div 
                   className="h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
-                  style={{ backgroundColor: primaryColor }}
+                  style={{ background: 'var(--widget-primary)' }}
                 >
                   <MessageCircle className="h-4 w-4 text-white" />
                 </div>
@@ -426,7 +434,7 @@ export const ChatWidget = ({
                 onClick={handleSend}
                 disabled={!inputValue.trim()}
                 className="h-11 w-11 rounded-full flex items-center justify-center transition-all duration-300 disabled:opacity-40 hover:scale-105 active:scale-95 shadow-md"
-                style={{ backgroundColor: primaryColor }}
+                style={{ background: 'var(--widget-primary)' }}
               >
                 <Send className="h-4 w-4 text-white" />
               </button>
@@ -442,10 +450,7 @@ export const ChatWidget = ({
           "h-16 w-16 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 hover:scale-110 active:scale-95",
           isOpen && "rotate-90"
         )}
-        style={{ 
-          background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)`,
-          boxShadow: `0 8px 32px ${primaryColor}40`
-        }}
+        style={{ background: 'var(--widget-primary)' }}
       >
         {isOpen ? (
           <X className="h-6 w-6 text-white" />
