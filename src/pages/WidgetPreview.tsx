@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const colorPresets = [
   { name: 'Sage', color: 'hsl(150, 25%, 45%)' },
@@ -121,16 +122,19 @@ const WidgetPreview = () => {
       {/* Header */}
       <header className="bg-card border-b border-border">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Link to="/dashboard">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Widget Customization</h1>
-              <p className="text-sm text-muted-foreground">Customize and embed your chat widget</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link to="/dashboard">
+                <Button variant="ghost" size="icon">
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-xl font-bold text-foreground">Widget Customization</h1>
+                <p className="text-sm text-muted-foreground">Customize and embed your chat widget</p>
+              </div>
             </div>
+            <ThemeToggle />
           </div>
         </div>
       </header>

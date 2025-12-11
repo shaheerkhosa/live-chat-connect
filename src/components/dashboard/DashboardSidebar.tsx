@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { mockAgents } from '@/data/mockData';
 import scaledBotLogo from '@/assets/scaled-bot-logo.png';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface SidebarItemProps {
   to: string;
@@ -133,8 +134,16 @@ export const DashboardSidebar = () => {
       {/* User Profile */}
       <div className={cn(
         "border-t border-sidebar-border p-3",
-        collapsed ? "flex justify-center" : ""
+        collapsed ? "flex flex-col items-center gap-2" : ""
       )}>
+        {/* Theme Toggle */}
+        <div className={cn(
+          "flex items-center mb-2",
+          collapsed ? "justify-center" : "justify-end px-2"
+        )}>
+          <ThemeToggle />
+        </div>
+        
         <div className={cn(
           "flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent transition-colors cursor-pointer",
           collapsed ? "justify-center" : ""
