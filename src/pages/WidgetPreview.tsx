@@ -10,17 +10,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 
 const colorPresets = [
-  { name: 'Teal', color: 'hsl(172, 66%, 50%)' },
-  { name: 'Blue', color: 'hsl(217, 91%, 60%)' },
-  { name: 'Purple', color: 'hsl(262, 83%, 58%)' },
-  { name: 'Pink', color: 'hsl(330, 81%, 60%)' },
-  { name: 'Orange', color: 'hsl(25, 95%, 53%)' },
-  { name: 'Green', color: 'hsl(142, 71%, 45%)' },
+  { name: 'Sage', color: 'hsl(150, 25%, 45%)' },
+  { name: 'Slate', color: 'hsl(215, 20%, 50%)' },
+  { name: 'Lavender', color: 'hsl(260, 25%, 55%)' },
+  { name: 'Dusty Rose', color: 'hsl(350, 25%, 55%)' },
+  { name: 'Warm Gray', color: 'hsl(30, 15%, 50%)' },
+  { name: 'Ocean', color: 'hsl(190, 30%, 45%)' },
 ];
 
 const WidgetPreview = () => {
   const [propertyId] = useState('demo-property-123');
-  const [primaryColor, setPrimaryColor] = useState('hsl(172, 66%, 50%)');
+  const [primaryColor, setPrimaryColor] = useState('hsl(150, 25%, 45%)');
   const [agentName, setAgentName] = useState('Support Team');
   const [greeting, setGreeting] = useState("Hi there! 👋 How can I help you today?");
   const [copied, setCopied] = useState(false);
