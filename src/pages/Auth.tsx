@@ -107,28 +107,44 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted p-4">
-      <Card className="w-full max-w-md border-border/50 shadow-2xl">
-        <CardHeader className="text-center space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/30 to-muted/50 p-6">
+      {/* Decorative background elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 -left-32 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-accent/30 rounded-full blur-3xl" />
+      </div>
+      
+      <Card className="w-full max-w-md border-border/40 shadow-xl backdrop-blur-sm bg-card/95 rounded-2xl animate-fade-in">
+        <CardHeader className="text-center space-y-6 pt-8 pb-4">
           <div className="flex justify-center">
-            <img src={scaledBotLogo} alt="Scaled Bot" className="h-16 w-auto" />
+            <div className="p-3 bg-primary/10 rounded-2xl">
+              <img src={scaledBotLogo} alt="Scaled Bot" className="h-14 w-auto" />
+            </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Welcome to Scaled Bot</CardTitle>
-          <CardDescription>
-            Sign in to manage your live chat and leads
-          </CardDescription>
+          <div className="space-y-2">
+            <CardTitle className="text-2xl font-semibold tracking-tight">
+              Welcome to Scaled Bot
+            </CardTitle>
+            <CardDescription className="text-muted-foreground/80 text-base leading-relaxed">
+              Compassionate support, one conversation at a time
+            </CardDescription>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-8 pb-8">
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-8 h-12 rounded-xl bg-muted/60">
+              <TabsTrigger value="login" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm transition-all duration-300">
+                Sign In
+              </TabsTrigger>
+              <TabsTrigger value="signup" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm transition-all duration-300">
+                Sign Up
+              </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
+            <TabsContent value="login" className="animate-fade-in">
+              <form onSubmit={handleLogin} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
+                  <Label htmlFor="login-email" className="text-sm font-medium">Email</Label>
                   <Input
                     id="login-email"
                     type="email"
@@ -136,10 +152,11 @@ export default function Auth() {
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     required
+                    className="h-12 rounded-xl border-border/60 focus:border-primary/50 transition-colors"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
+                  <Label htmlFor="login-password" className="text-sm font-medium">Password</Label>
                   <Input
                     id="login-password"
                     type="password"
@@ -147,29 +164,40 @@ export default function Auth() {
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     required
+                    className="h-12 rounded-xl border-border/60 focus:border-primary/50 transition-colors"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Signing in...' : 'Sign In'}
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 rounded-xl text-base font-medium shadow-md hover:shadow-lg transition-all duration-300 mt-2" 
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      Signing in...
+                    </span>
+                  ) : 'Sign In'}
                 </Button>
               </form>
             </TabsContent>
             
-            <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4">
+            <TabsContent value="signup" className="animate-fade-in">
+              <form onSubmit={handleSignup} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
+                  <Label htmlFor="signup-name" className="text-sm font-medium">Full Name</Label>
                   <Input
                     id="signup-name"
                     type="text"
-                    placeholder="John Doe"
+                    placeholder="Your name"
                     value={signupName}
                     onChange={(e) => setSignupName(e.target.value)}
                     required
+                    className="h-12 rounded-xl border-border/60 focus:border-primary/50 transition-colors"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email" className="text-sm font-medium">Email</Label>
                   <Input
                     id="signup-email"
                     type="email"
@@ -177,10 +205,11 @@ export default function Auth() {
                     value={signupEmail}
                     onChange={(e) => setSignupEmail(e.target.value)}
                     required
+                    className="h-12 rounded-xl border-border/60 focus:border-primary/50 transition-colors"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
                   <Input
                     id="signup-password"
                     type="password"
@@ -188,14 +217,28 @@ export default function Auth() {
                     value={signupPassword}
                     onChange={(e) => setSignupPassword(e.target.value)}
                     required
+                    className="h-12 rounded-xl border-border/60 focus:border-primary/50 transition-colors"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Creating account...' : 'Create Account'}
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 rounded-xl text-base font-medium shadow-md hover:shadow-lg transition-all duration-300 mt-2" 
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      Creating account...
+                    </span>
+                  ) : 'Create Account'}
                 </Button>
               </form>
             </TabsContent>
           </Tabs>
+          
+          <p className="text-center text-sm text-muted-foreground mt-8">
+            Your journey to healing starts here
+          </p>
         </CardContent>
       </Card>
     </div>
