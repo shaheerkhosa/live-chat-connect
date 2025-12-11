@@ -297,22 +297,27 @@ export const ChatWidget = ({
         >
           {/* Header */}
           <div 
-            className="px-5 py-4 flex items-center justify-between"
-            style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)` }}
+            className="px-5 py-4 flex items-center justify-between relative overflow-hidden"
+            style={{ backgroundColor: primaryColor }}
           >
-            <div className="flex items-center gap-3">
+            {/* Gradient overlay */}
+            <div 
+              className="absolute inset-0 opacity-90"
+              style={{ background: `linear-gradient(135deg, ${primaryColor} 0%, transparent 100%)` }}
+            />
+            <div className="flex items-center gap-3 relative z-10">
               <div className="h-11 w-11 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
                 <MessageCircle className="h-5 w-5 text-white" />
               </div>
               <div>
                 <h3 className="font-semibold text-white">{agentName}</h3>
                 <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-healing animate-pulse" />
+                  <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
                   <span className="text-xs text-white/80">Here to help</span>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 relative z-10">
               <button 
                 onClick={handleStartVideoCall}
                 className="h-9 w-9 rounded-full hover:bg-white/20 flex items-center justify-center transition-all duration-300"
