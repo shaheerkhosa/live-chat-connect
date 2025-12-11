@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Check, ArrowLeft, Code, Palette, Settings2 } from 'lucide-react';
+import { Copy, Check, ArrowLeft, Code, Palette, Settings2, Globe, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ChatWidget } from '@/components/widget/ChatWidget';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const colorPresets = [
   { name: 'Sage', color: 'hsl(150, 25%, 45%)' },
@@ -18,12 +19,80 @@ const colorPresets = [
   { name: 'Ocean', color: 'hsl(190, 30%, 45%)' },
 ];
 
+// Convert hex to HSL
+const hexToHsl = (hex: string): string => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return hex;
+  
+  let r = parseInt(result[1], 16) / 255;
+  let g = parseInt(result[2], 16) / 255;
+  let b = parseInt(result[3], 16) / 255;
+  
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+  
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  
+  return `hsl(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`;
+};
+
 const WidgetPreview = () => {
   const [propertyId] = useState('demo-property-123');
   const [primaryColor, setPrimaryColor] = useState('hsl(150, 25%, 45%)');
   const [agentName, setAgentName] = useState('Support Team');
   const [greeting, setGreeting] = useState("Hi there! 👋 How can I help you today?");
   const [copied, setCopied] = useState(false);
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [isExtracting, setIsExtracting] = useState(false);
+
+  const extractBrandColors = async () => {
+    if (!websiteUrl.trim()) {
+      toast.error('Please enter a website URL');
+      return;
+    }
+
+    setIsExtracting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('extract-brand-colors', {
+        body: { url: websiteUrl }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.branding) {
+        const { primaryColor: extractedColor, colors } = data.branding;
+        
+        // Try to get the best color (primary > accent > first available)
+        let colorToUse = extractedColor || colors?.primary || colors?.accent;
+        
+        if (colorToUse) {
+          // Convert hex to HSL if needed
+          if (colorToUse.startsWith('#')) {
+            colorToUse = hexToHsl(colorToUse);
+          }
+          setPrimaryColor(colorToUse);
+          toast.success('Brand colors extracted successfully!');
+        } else {
+          toast.error('Could not find brand colors on this website');
+        }
+      } else {
+        toast.error(data.error || 'Failed to extract brand colors');
+      }
+    } catch (error) {
+      console.error('Error extracting brand colors:', error);
+      toast.error('Failed to extract brand colors from website');
+    } finally {
+      setIsExtracting(false);
+    }
+  };
 
   const widgetScript = `<!-- LiveChat Widget -->
 <script>
@@ -83,6 +152,44 @@ const WidgetPreview = () => {
               </TabsList>
 
               <TabsContent value="appearance" className="mt-6 space-y-6">
+                {/* Extract from Website */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      Match Your Website
+                    </CardTitle>
+                    <CardDescription>
+                      Paste your website URL to automatically extract brand colors
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex gap-2">
+                      <Input
+                        value={websiteUrl}
+                        onChange={(e) => setWebsiteUrl(e.target.value)}
+                        placeholder="https://yourwebsite.com"
+                        className="flex-1"
+                      />
+                      <Button 
+                        onClick={extractBrandColors} 
+                        disabled={isExtracting}
+                        variant="secondary"
+                      >
+                        {isExtracting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Extracting...
+                          </>
+                        ) : (
+                          'Extract'
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Brand Color */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Brand Color</CardTitle>
