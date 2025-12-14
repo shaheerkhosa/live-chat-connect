@@ -51,15 +51,15 @@
     --offline: 220 15% 70%;
     --away: 45 70% 60%;
 
-    /* Sidebar - calm dark tones */
-    --sidebar-background: 220 25% 18%;
-    --sidebar-foreground: 210 20% 85%;
-    --sidebar-primary: 174 42% 55%;
+    /* Sidebar - light neutral tones */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 20% 30%;
+    --sidebar-primary: 174 42% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 25% 24%;
-    --sidebar-accent-foreground: 210 20% 95%;
-    --sidebar-border: 220 25% 25%;
-    --sidebar-ring: 174 42% 55%;
+    --sidebar-accent: 210 25% 96%;
+    --sidebar-accent-foreground: 220 20% 25%;
+    --sidebar-border: 210 25% 92%;
+    --sidebar-ring: 174 42% 45%;
   }
 
   .dark {
