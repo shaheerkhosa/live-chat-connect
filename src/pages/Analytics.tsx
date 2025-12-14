@@ -4,14 +4,14 @@ import { BarChart3 } from 'lucide-react';
 
 const Analytics = () => {
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-gradient-subtle">
       <DashboardSidebar />
       
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="h-16 border-b border-border flex items-center px-6 bg-card">
+        <div className="h-16 border-b border-border flex items-center px-6 bg-card/90 backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center glow-primary">
               <BarChart3 className="h-5 w-5 text-primary" />
             </div>
             <div>

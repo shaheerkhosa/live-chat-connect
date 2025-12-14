@@ -151,11 +151,11 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
   const assignedAgent = assignedAgentId ? mockAgents.find(a => a.id === assignedAgentId) : null;
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full bg-gradient-subtle">
       {/* Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="h-16 px-4 flex items-center justify-between border-b border-border bg-card">
+        <div className="h-16 px-4 flex items-center justify-between border-b border-border bg-card/90 backdrop-blur-sm">
           <div className="flex items-center gap-3 min-w-0">
             <Avatar className="h-10 w-10 flex-shrink-0">
               <AvatarFallback className="bg-primary/10 text-primary">
@@ -228,7 +228,7 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-border bg-card">
+        <div className="p-4 border-t border-border bg-card/90 backdrop-blur-sm">
           <div className="flex gap-2">
             <Input
               ref={inputRef}
@@ -237,12 +237,12 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
               onKeyDown={handleKeyDown}
               placeholder={status === 'closed' ? 'Conversation closed' : 'Type a message...'}
               disabled={status === 'closed'}
-              className="flex-1"
+              className="flex-1 bg-background/50 focus:bg-background transition-colors"
             />
             <Button 
               onClick={handleSend} 
               disabled={!message.trim() || status === 'closed'}
-              className="bg-primary hover:bg-primary/90"
+              className="bg-primary hover:bg-primary/90 glow-primary transition-all hover:scale-105"
             >
               <Send className="h-4 w-4" />
             </Button>
@@ -251,8 +251,8 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
       </div>
 
       {/* Visitor Info Sidebar */}
-      <div className="w-72 border-l border-border bg-card overflow-y-auto hidden lg:block">
-        <div className="p-4 border-b border-border">
+      <div className="w-72 border-l border-border bg-card/80 backdrop-blur-sm overflow-y-auto hidden lg:block">
+        <div className="p-4 border-b border-border bg-gradient-card">
           <h4 className="font-semibold text-foreground mb-1">Visitor Details</h4>
           <p className="text-xs text-muted-foreground">
             Session started {formatDistanceToNow(new Date(visitor.createdAt), { addSuffix: true })}

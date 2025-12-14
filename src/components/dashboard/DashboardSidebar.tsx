@@ -85,7 +85,7 @@ export const DashboardSidebar = () => {
   return (
     <aside 
       className={cn(
-        "h-screen bg-sidebar flex flex-col border-r border-sidebar-border transition-all duration-300",
+        "h-screen bg-sidebar flex flex-col border-r border-sidebar-border transition-all duration-300 shadow-sm",
         collapsed ? "w-[68px]" : "w-64"
       )}
     >

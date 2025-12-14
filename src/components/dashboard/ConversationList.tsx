@@ -26,10 +26,10 @@ const ConversationItem = ({ conversation, isSelected, onClick }: ConversationIte
     <div
       onClick={onClick}
       className={cn(
-        "p-4 border-b border-border cursor-pointer transition-all duration-200",
-        "hover:bg-accent/50",
-        isSelected && "bg-accent border-l-2 border-l-primary",
-        unreadCount > 0 && !isSelected && "bg-accent/30"
+        "p-4 border-b border-border/50 cursor-pointer transition-all duration-200",
+        "hover:bg-accent/40 hover:border-l-2 hover:border-l-primary/30",
+        isSelected && "bg-accent border-l-2 border-l-primary shadow-sm",
+        unreadCount > 0 && !isSelected && "bg-primary/5"
       )}
     >
       <div className="flex gap-3">

@@ -146,18 +146,18 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-gradient-subtle">
       <DashboardSidebar />
       
       <div className="flex-1 flex min-w-0">
         {/* Conversation List */}
-        <div className="w-80 border-r border-border flex flex-col bg-card">
+        <div className="w-80 border-r border-border flex flex-col bg-card/80 backdrop-blur-sm">
           {/* Header */}
-          <div className="p-4 border-b border-border space-y-3">
+          <div className="p-4 border-b border-border space-y-3 bg-gradient-card">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-foreground">{getStatusTitle()}</h2>
               {totalUnread > 0 && (
-                <span className="text-sm text-primary font-medium">{totalUnread} unread</span>
+                <span className="text-sm text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">{totalUnread} unread</span>
               )}
             </div>
             
@@ -167,13 +167,13 @@ const Dashboard = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search conversations..."
-                className="pl-9"
+                className="pl-9 bg-background/50 border-border/50 focus:bg-background transition-colors"
               />
             </div>
 
             <Select value={propertyFilter} onValueChange={setPropertyFilter}>
-              <SelectTrigger className="w-full">
-                <Filter className="h-4 w-4 mr-2" />
+              <SelectTrigger className="w-full bg-background/50 border-border/50 hover:bg-background transition-colors">
+                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
                 <SelectValue placeholder="Filter by property" />
               </SelectTrigger>
               <SelectContent>
