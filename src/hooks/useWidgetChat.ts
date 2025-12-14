@@ -42,6 +42,100 @@ const getBrowserInfo = (): string => {
   return `${browser}, ${os}`;
 };
 
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-ai`;
+
+async function streamAIResponse({
+  messages,
+  onDelta,
+  onDone,
+  onError,
+}: {
+  messages: { role: 'user' | 'assistant'; content: string }[];
+  onDelta: (text: string) => void;
+  onDone: () => void;
+  onError: (error: string) => void;
+}) {
+  try {
+    const resp = await fetch(CHAT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ messages }),
+    });
+
+    if (!resp.ok) {
+      const error = await resp.json();
+      onError(error.error || 'Failed to get AI response');
+      return;
+    }
+
+    if (!resp.body) {
+      onError('No response body');
+      return;
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let textBuffer = '';
+    let streamDone = false;
+
+    while (!streamDone) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      textBuffer += decoder.decode(value, { stream: true });
+
+      let newlineIndex: number;
+      while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
+        let line = textBuffer.slice(0, newlineIndex);
+        textBuffer = textBuffer.slice(newlineIndex + 1);
+
+        if (line.endsWith('\r')) line = line.slice(0, -1);
+        if (line.startsWith(':') || line.trim() === '') continue;
+        if (!line.startsWith('data: ')) continue;
+
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === '[DONE]') {
+          streamDone = true;
+          break;
+        }
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) onDelta(content);
+        } catch {
+          textBuffer = line + '\n' + textBuffer;
+          break;
+        }
+      }
+    }
+
+    // Final flush
+    if (textBuffer.trim()) {
+      for (let raw of textBuffer.split('\n')) {
+        if (!raw) continue;
+        if (raw.endsWith('\r')) raw = raw.slice(0, -1);
+        if (raw.startsWith(':') || raw.trim() === '') continue;
+        if (!raw.startsWith('data: ')) continue;
+        const jsonStr = raw.slice(6).trim();
+        if (jsonStr === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) onDelta(content);
+        } catch { /* ignore */ }
+      }
+    }
+
+    onDone();
+  } catch (error) {
+    console.error('Stream error:', error);
+    onError('Connection error. Please try again.');
+  }
+}
+
 export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [visitorId, setVisitorId] = useState<string | null>(null);
@@ -51,6 +145,15 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
 
   const initializeChat = useCallback(async () => {
     if (!propertyId || propertyId === 'demo') {
+      // Add greeting message in demo mode
+      if (greeting) {
+        setMessages([{
+          id: 'greeting',
+          content: greeting,
+          sender_type: 'agent',
+          created_at: new Date().toISOString(),
+        }]);
+      }
       setLoading(false);
       return;
     }
@@ -117,86 +220,134 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
         ...m,
         sender_type: m.sender_type as 'agent' | 'visitor',
       })));
+    } else if (greeting) {
+      // Add greeting for new conversations
+      setMessages([{
+        id: 'greeting',
+        content: greeting,
+        sender_type: 'agent',
+        created_at: new Date().toISOString(),
+      }]);
     }
 
     setLoading(false);
-  }, [propertyId]);
+  }, [propertyId, greeting]);
 
   const sendMessage = async (content: string) => {
-    if (!propertyId || propertyId === 'demo' || !visitorId) {
-      // Demo mode - just add to local state
-      const demoMsg: Message = {
-        id: `msg-${Date.now()}`,
-        content,
-        sender_type: 'visitor',
-        created_at: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, demoMsg]);
-      
-      // Simulate agent response
-      setIsTyping(true);
-      setTimeout(() => {
+    const visitorMessage: Message = {
+      id: `msg-${Date.now()}`,
+      content,
+      sender_type: 'visitor',
+      created_at: new Date().toISOString(),
+    };
+    
+    setMessages(prev => [...prev, visitorMessage]);
+
+    // Build conversation history for AI
+    const conversationHistory = messages
+      .filter(m => m.id !== 'greeting')
+      .map(m => ({
+        role: m.sender_type === 'visitor' ? 'user' as const : 'assistant' as const,
+        content: m.content,
+      }));
+    
+    conversationHistory.push({ role: 'user', content });
+
+    // Show typing indicator
+    setIsTyping(true);
+
+    // Create placeholder for AI response
+    const aiMessageId = `ai-${Date.now()}`;
+    let aiContent = '';
+
+    // Stream AI response
+    await streamAIResponse({
+      messages: conversationHistory,
+      onDelta: (delta) => {
+        aiContent += delta;
+        setMessages(prev => {
+          const existing = prev.find(m => m.id === aiMessageId);
+          if (existing) {
+            return prev.map(m => m.id === aiMessageId ? { ...m, content: aiContent } : m);
+          } else {
+            return [...prev, {
+              id: aiMessageId,
+              content: aiContent,
+              sender_type: 'agent' as const,
+              created_at: new Date().toISOString(),
+            }];
+          }
+        });
+      },
+      onDone: () => {
         setIsTyping(false);
-        const agentReply: Message = {
-          id: `msg-${Date.now() + 1}`,
-          content: "Thanks for your message! An agent will respond shortly.",
+      },
+      onError: (error) => {
+        setIsTyping(false);
+        console.error('AI Error:', error);
+        // Add error message
+        setMessages(prev => [...prev, {
+          id: `error-${Date.now()}`,
+          content: "I'm having trouble connecting right now. Please try again in a moment, or speak directly with our team.",
           sender_type: 'agent',
           created_at: new Date().toISOString(),
-        };
-        setMessages(prev => [...prev, agentReply]);
-      }, 1500);
-      
-      return;
-    }
+        }]);
+      },
+    });
 
-    let currentConversationId = conversationId;
+    // If connected to a real property, also save to database
+    if (propertyId && propertyId !== 'demo' && visitorId) {
+      let currentConversationId = conversationId;
 
-    // Create conversation if doesn't exist
-    if (!currentConversationId) {
-      const { data: newConversation, error } = await supabase
-        .from('conversations')
-        .insert({
-          property_id: propertyId,
-          visitor_id: visitorId,
-          status: 'pending',
-        })
-        .select()
-        .single();
+      // Create conversation if doesn't exist
+      if (!currentConversationId) {
+        const { data: newConversation, error } = await supabase
+          .from('conversations')
+          .insert({
+            property_id: propertyId,
+            visitor_id: visitorId,
+            status: 'pending',
+          })
+          .select()
+          .single();
 
-      if (error) {
-        console.error('Error creating conversation:', error);
-        return;
+        if (!error && newConversation) {
+          currentConversationId = newConversation.id;
+          setConversationId(currentConversationId);
+        }
       }
 
-      currentConversationId = newConversation.id;
-      setConversationId(currentConversationId);
+      if (currentConversationId) {
+        // Save visitor message
+        await supabase
+          .from('messages')
+          .insert({
+            conversation_id: currentConversationId,
+            sender_id: visitorId,
+            sender_type: 'visitor',
+            content,
+          });
+
+        // Save AI response
+        if (aiContent) {
+          await supabase
+            .from('messages')
+            .insert({
+              conversation_id: currentConversationId,
+              sender_id: 'ai-bot',
+              sender_type: 'agent',
+              content: aiContent,
+            });
+        }
+      }
     }
-
-    // Send message
-    const { data: newMessage, error } = await supabase
-      .from('messages')
-      .insert({
-        conversation_id: currentConversationId,
-        sender_id: visitorId,
-        sender_type: 'visitor',
-        content,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error sending message:', error);
-      return;
-    }
-
-    setMessages(prev => [...prev, { ...newMessage, sender_type: newMessage.sender_type as 'agent' | 'visitor' }]);
   };
 
   useEffect(() => {
     initializeChat();
   }, [initializeChat]);
 
-  // Subscribe to realtime messages
+  // Subscribe to realtime messages (for human agent responses)
   useEffect(() => {
     if (!conversationId) return;
 
@@ -211,13 +362,15 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          const rawMsg = payload.new as { id: string; content: string; sender_type: string; created_at: string };
-          const newMsg: Message = {
-            ...rawMsg,
-            sender_type: rawMsg.sender_type as 'agent' | 'visitor',
-          };
-          // Only add if it's from agent (visitor messages are added immediately)
-          if (newMsg.sender_type === 'agent') {
+          const rawMsg = payload.new as { id: string; content: string; sender_type: string; sender_id: string; created_at: string };
+          // Only add agent messages that aren't from AI (human agent override)
+          if (rawMsg.sender_type === 'agent' && rawMsg.sender_id !== 'ai-bot') {
+            const newMsg: Message = {
+              id: rawMsg.id,
+              content: rawMsg.content,
+              sender_type: 'agent',
+              created_at: rawMsg.created_at,
+            };
             setMessages(prev => {
               const exists = prev.some(m => m.id === newMsg.id);
               if (exists) return prev;
