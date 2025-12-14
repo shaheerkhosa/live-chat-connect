@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Minimize2, Video, Phone, PhoneOff, Mic, MicOff, VideoOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Message } from '@/types/chat';
 import { format } from 'date-fns';
-import { useVideoChat, VideoCallStatus } from '@/hooks/useVideoChat';
+import { useVideoChat } from '@/hooks/useVideoChat';
+import { useWidgetChat } from '@/hooks/useWidgetChat';
 
 interface ChatWidgetProps {
   propertyId?: string;
@@ -14,18 +14,6 @@ interface ChatWidgetProps {
   isPreview?: boolean;
 }
 
-const mockMessages: Message[] = [
-  {
-    id: '1',
-    conversationId: 'demo',
-    senderId: 'agent-1',
-    senderType: 'agent',
-    content: "Hi there! 👋 How can I help you today?",
-    timestamp: new Date(Date.now() - 60000),
-    read: true,
-  },
-];
-
 export const ChatWidget = ({
   propertyId = 'demo',
   primaryColor = 'hsl(172, 66%, 50%)',
@@ -35,13 +23,13 @@ export const ChatWidget = ({
   isPreview = false,
 }: ChatWidgetProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [hasIncomingCall, setHasIncomingCall] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const { messages, sendMessage, isTyping } = useWidgetChat({ propertyId, greeting });
 
   const videoChat = useVideoChat({
     onCallAccepted: () => {
@@ -97,35 +85,8 @@ export const ChatWidget = ({
 
   const handleSend = () => {
     if (!inputValue.trim()) return;
-
-    const newMessage: Message = {
-      id: `msg-${Date.now()}`,
-      conversationId: 'demo',
-      senderId: 'visitor',
-      senderType: 'visitor',
-      content: inputValue.trim(),
-      timestamp: new Date(),
-      read: false,
-    };
-
-    setMessages(prev => [...prev, newMessage]);
+    sendMessage(inputValue.trim());
     setInputValue('');
-
-    // Simulate agent typing
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      const agentReply: Message = {
-        id: `msg-${Date.now() + 1}`,
-        conversationId: 'demo',
-        senderId: 'agent-1',
-        senderType: 'agent',
-        content: "Thanks for your message! An agent will respond shortly.",
-        timestamp: new Date(),
-        read: true,
-      };
-      setMessages(prev => [...prev, agentReply]);
-    }, 1500);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -362,11 +323,11 @@ export const ChatWidget = ({
                 key={msg.id}
                 className={cn(
                   "flex gap-3 animate-fade-in",
-                  msg.senderType === 'visitor' ? "flex-row-reverse" : "flex-row"
+                  msg.sender_type === 'visitor' ? "flex-row-reverse" : "flex-row"
                 )}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                {msg.senderType === 'agent' && (
+                {msg.sender_type === 'agent' && (
                   <div 
                     className="h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
                     style={{ background: 'var(--widget-primary)' }}
@@ -377,11 +338,11 @@ export const ChatWidget = ({
                 <div
                   className={cn(
                     "max-w-[75%] px-4 py-3 shadow-sm",
-                    msg.senderType === 'visitor'
+                    msg.sender_type === 'visitor'
                       ? "rounded-3xl rounded-br-lg"
                       : "bg-card rounded-3xl rounded-bl-lg border border-border/30"
                   )}
-                  style={msg.senderType === 'visitor' ? { 
+                  style={msg.sender_type === 'visitor' ? { 
                     background: 'var(--widget-primary)', 
                     color: 'white' 
                   } : {}}
@@ -389,9 +350,9 @@ export const ChatWidget = ({
                   <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                   <p className={cn(
                     "text-xs mt-1.5",
-                    msg.senderType === 'visitor' ? "text-white/70" : "text-muted-foreground"
+                    msg.sender_type === 'visitor' ? "text-white/70" : "text-muted-foreground"
                   )}>
-                    {format(new Date(msg.timestamp), 'h:mm a')}
+                    {format(new Date(msg.created_at), 'h:mm a')}
                   </p>
                 </div>
               </div>

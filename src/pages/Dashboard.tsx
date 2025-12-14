@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Search, Filter } from 'lucide-react';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { ConversationList } from '@/components/dashboard/ConversationList';
 import { ChatPanel } from '@/components/dashboard/ChatPanel';
-import { mockConversations, mockProperties } from '@/data/mockData';
+import { useConversations, DbConversation } from '@/hooks/useConversations';
 import { Conversation, Message } from '@/types/chat';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -19,100 +18,110 @@ import { useAuth } from '@/hooks/useAuth';
 
 type FilterStatus = 'all' | 'active' | 'pending' | 'closed';
 
+// Convert DB conversation to UI conversation format
+const toUiConversation = (dbConv: DbConversation): Conversation => ({
+  id: dbConv.id,
+  propertyId: dbConv.property_id,
+  visitorId: dbConv.visitor_id,
+  visitor: {
+    id: dbConv.visitor?.id || '',
+    sessionId: dbConv.visitor?.session_id || '',
+    name: dbConv.visitor?.name || undefined,
+    email: dbConv.visitor?.email || undefined,
+    propertyId: dbConv.property_id,
+    browserInfo: dbConv.visitor?.browser_info || undefined,
+    location: dbConv.visitor?.location || undefined,
+    currentPage: dbConv.visitor?.current_page || undefined,
+    createdAt: new Date(dbConv.visitor?.created_at || dbConv.created_at),
+  },
+  assignedAgentId: dbConv.assigned_agent_id || undefined,
+  status: dbConv.status,
+  messages: (dbConv.messages || []).map(m => ({
+    id: m.id,
+    conversationId: m.conversation_id,
+    senderId: m.sender_id,
+    senderType: m.sender_type,
+    content: m.content,
+    timestamp: new Date(m.created_at),
+    read: m.read,
+  })),
+  unreadCount: (dbConv.messages || []).filter(m => !m.read && m.sender_type === 'visitor').length,
+  createdAt: new Date(dbConv.created_at),
+  updatedAt: new Date(dbConv.updated_at),
+});
+
 const Dashboard = () => {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { conversations: dbConversations, properties, loading: dataLoading, sendMessage, markMessagesAsRead, closeConversation } = useConversations();
   
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       navigate('/auth');
     }
-  }, [user, loading, navigate]);
+  }, [user, authLoading, navigate]);
+
   const statusFilter = (searchParams.get('status') as FilterStatus) || 'all';
   
-  const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [propertyFilter, setPropertyFilter] = useState<string>('all');
 
-  const filteredConversations = conversations.filter(conv => {
-    // Status filter
-    if (statusFilter !== 'all' && conv.status !== statusFilter) return false;
-    
-    // Property filter
-    if (propertyFilter !== 'all' && conv.propertyId !== propertyFilter) return false;
-    
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const visitorName = conv.visitor.name?.toLowerCase() || '';
-      const visitorEmail = conv.visitor.email?.toLowerCase() || '';
-      const lastMessage = conv.lastMessage?.content.toLowerCase() || '';
+  // Convert DB conversations to UI format
+  const conversations = useMemo(() => 
+    dbConversations.map(toUiConversation), 
+    [dbConversations]
+  );
+
+  // Get selected conversation
+  const selectedConversation = useMemo(() => 
+    conversations.find(c => c.id === selectedConversationId) || null,
+    [conversations, selectedConversationId]
+  );
+
+  const filteredConversations = useMemo(() => {
+    return conversations.filter(conv => {
+      if (statusFilter !== 'all' && conv.status !== statusFilter) return false;
+      if (propertyFilter !== 'all' && conv.propertyId !== propertyFilter) return false;
       
-      if (!visitorName.includes(query) && !visitorEmail.includes(query) && !lastMessage.includes(query)) {
-        return false;
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const visitorName = conv.visitor.name?.toLowerCase() || '';
+        const visitorEmail = conv.visitor.email?.toLowerCase() || '';
+        const lastMessage = conv.lastMessage?.content.toLowerCase() || '';
+        
+        if (!visitorName.includes(query) && !visitorEmail.includes(query) && !lastMessage.includes(query)) {
+          return false;
+        }
       }
-    }
-    
-    return true;
-  }).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      
+      return true;
+    }).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  }, [conversations, statusFilter, propertyFilter, searchQuery]);
 
-  const handleSelectConversation = (conversation: Conversation) => {
-    // Mark messages as read
-    const updated = conversations.map(conv => 
-      conv.id === conversation.id 
-        ? { 
-            ...conv, 
-            unreadCount: 0,
-            messages: conv.messages.map(m => ({ ...m, read: true }))
-          } 
-        : conv
-    );
-    setConversations(updated);
-    setSelectedConversation(updated.find(c => c.id === conversation.id) || null);
+  // Add lastMessage to conversations
+  const conversationsWithLastMessage = useMemo(() => 
+    filteredConversations.map(conv => ({
+      ...conv,
+      lastMessage: conv.messages[conv.messages.length - 1],
+    })),
+    [filteredConversations]
+  );
+
+  const handleSelectConversation = async (conversation: Conversation) => {
+    setSelectedConversationId(conversation.id);
+    await markMessagesAsRead(conversation.id);
   };
 
-  const handleSendMessage = (content: string) => {
-    if (!selectedConversation) return;
-
-    const newMessage: Message = {
-      id: `msg-${Date.now()}`,
-      conversationId: selectedConversation.id,
-      senderId: 'agent-1',
-      senderType: 'agent',
-      content,
-      timestamp: new Date(),
-      read: true,
-    };
-
-    const updated = conversations.map(conv => 
-      conv.id === selectedConversation.id 
-        ? { 
-            ...conv, 
-            messages: [...conv.messages, newMessage],
-            lastMessage: newMessage,
-            updatedAt: new Date(),
-            status: 'active' as const,
-          } 
-        : conv
-    );
-
-    setConversations(updated);
-    setSelectedConversation(updated.find(c => c.id === selectedConversation.id) || null);
+  const handleSendMessage = async (content: string) => {
+    if (!selectedConversation || !user) return;
+    await sendMessage(selectedConversation.id, content, user.id);
   };
 
-  const handleCloseConversation = () => {
+  const handleCloseConversation = async () => {
     if (!selectedConversation) return;
-
-    const updated = conversations.map(conv => 
-      conv.id === selectedConversation.id 
-        ? { ...conv, status: 'closed' as const } 
-        : conv
-    );
-
-    setConversations(updated);
-    setSelectedConversation(updated.find(c => c.id === selectedConversation.id) || null);
+    await closeConversation(selectedConversation.id);
   };
 
   const getStatusTitle = () => {
@@ -125,6 +134,8 @@ const Dashboard = () => {
   };
 
   const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
+
+  const loading = authLoading || dataLoading;
 
   if (loading || !user) {
     return (
@@ -167,7 +178,7 @@ const Dashboard = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Properties</SelectItem>
-                {mockProperties.map(prop => (
+                {properties.map(prop => (
                   <SelectItem key={prop.id} value={prop.id}>{prop.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -176,7 +187,7 @@ const Dashboard = () => {
 
           {/* List */}
           <ConversationList
-            conversations={filteredConversations}
+            conversations={conversationsWithLastMessage}
             selectedId={selectedConversation?.id}
             onSelect={handleSelectConversation}
           />
