@@ -26,21 +26,23 @@ export const BlogAnalytics = () => {
   return (
     <div className="space-y-4">
       {/* Time Range Selector */}
-      <div className="flex items-center gap-1 p-1 bg-muted rounded-lg w-fit">
-        {timeRangeOptions.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => setTimeRange(option.value)}
-            className={cn(
-              'px-4 py-2 text-sm font-medium rounded-md transition-all duration-200',
-              timeRange === option.value
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
+      <div className="flex justify-center">
+        <div className="flex items-center gap-1 p-1.5 bg-background/60 backdrop-blur-md border border-border/50 rounded-full shadow-sm">
+          {timeRangeOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setTimeRange(option.value)}
+              className={cn(
+                'px-5 py-2 text-sm font-medium rounded-full transition-all duration-200',
+                timeRange === option.value
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Summary Stats */}
