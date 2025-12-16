@@ -156,9 +156,6 @@ const WidgetPreview = () => {
 
   const handleRadiusChange = (value: number[]) => {
     setBorderRadius(value[0]);
-    // If user changes radius manually, switch to Custom
-    const matchingStyle = stylePresets.find(s => s.radius === value[0]);
-    setSelectedStyle(matchingStyle?.name || 'Custom');
   };
 
   const widgetScript = selectedPropertyId ? `<!-- Scaled Bot Widget -->
