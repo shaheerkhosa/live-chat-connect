@@ -298,40 +298,42 @@ const WidgetPreview = () => {
                     <div className="space-y-2">
                       <Label>Style Preset</Label>
                       <Select value={selectedStyle} onValueChange={handleStyleChange}>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-[180px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {stylePresets.map((style) => (
                             <SelectItem key={style.name} value={style.name}>
-                              <div className="flex flex-col">
-                                <span>{style.name}</span>
-                                <span className="text-xs text-muted-foreground">{style.description}</span>
-                              </div>
+                              {style.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      <p className="text-xs text-muted-foreground">
+                        {stylePresets.find(s => s.name === selectedStyle)?.description}
+                      </p>
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label>Corner Radius</Label>
-                        <span className="text-sm text-muted-foreground">{borderRadius}px</span>
+                    {selectedStyle === 'Custom' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label>Corner Radius</Label>
+                          <span className="text-sm text-muted-foreground">{borderRadius}px</span>
+                        </div>
+                        <Slider
+                          value={[borderRadius]}
+                          onValueChange={handleRadiusChange}
+                          max={32}
+                          min={0}
+                          step={2}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Sharp</span>
+                          <span>Rounded</span>
+                        </div>
                       </div>
-                      <Slider
-                        value={[borderRadius]}
-                        onValueChange={handleRadiusChange}
-                        max={32}
-                        min={0}
-                        step={2}
-                        className="w-full"
-                      />
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Sharp</span>
-                        <span>Rounded</span>
-                      </div>
-                    </div>
+                    )}
                   </CardContent>
                 </Card>
 
