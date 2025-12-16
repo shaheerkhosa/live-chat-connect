@@ -137,6 +137,41 @@ export type Database = {
           },
         ]
       }
+      page_analytics_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          page_title: string | null
+          property_id: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          page_title?: string | null
+          property_id: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          page_title?: string | null
+          property_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_analytics_events_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company_name: string | null

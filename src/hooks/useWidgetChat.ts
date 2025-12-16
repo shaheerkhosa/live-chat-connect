@@ -42,7 +42,37 @@ const getBrowserInfo = (): string => {
   return `${browser}, ${os}`;
 };
 
+const getPageInfo = () => ({
+  url: window.location.href,
+  pageTitle: document.title,
+});
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-ai`;
+const TRACK_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-page-analytics`;
+
+const trackAnalyticsEvent = async (
+  propertyId: string,
+  eventType: 'chat_open' | 'human_escalation'
+) => {
+  const { url, pageTitle } = getPageInfo();
+  try {
+    await fetch(TRACK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({
+        property_id: propertyId,
+        url,
+        page_title: pageTitle,
+        event_type: eventType,
+      }),
+    });
+  } catch (error) {
+    console.error('Failed to track analytics event:', error);
+  }
+};
 
 async function streamAIResponse({
   messages,
@@ -142,6 +172,8 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
+  const [chatOpenTracked, setChatOpenTracked] = useState(false);
+  const [humanEscalationTracked, setHumanEscalationTracked] = useState(false);
 
   const initializeChat = useCallback(async () => {
     if (!propertyId || propertyId === 'demo') {
@@ -242,6 +274,12 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
     };
     
     setMessages(prev => [...prev, visitorMessage]);
+
+    // Track chat_open event on first message
+    if (!chatOpenTracked && propertyId && propertyId !== 'demo') {
+      setChatOpenTracked(true);
+      trackAnalyticsEvent(propertyId, 'chat_open');
+    }
 
     // Build conversation history for AI
     const conversationHistory = messages
@@ -365,6 +403,12 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
           const rawMsg = payload.new as { id: string; content: string; sender_type: string; sender_id: string; created_at: string };
           // Only add agent messages that aren't from AI (human agent override)
           if (rawMsg.sender_type === 'agent' && rawMsg.sender_id !== 'ai-bot') {
+            // Track human escalation event (only once per conversation)
+            if (!humanEscalationTracked && propertyId && propertyId !== 'demo') {
+              setHumanEscalationTracked(true);
+              trackAnalyticsEvent(propertyId, 'human_escalation');
+            }
+
             const newMsg: Message = {
               id: rawMsg.id,
               content: rawMsg.content,
@@ -384,7 +428,7 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId]);
+  }, [conversationId, humanEscalationTracked, propertyId]);
 
   return {
     messages,

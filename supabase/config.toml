@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.chat-ai]
 verify_jwt = false
+
+[functions.track-page-analytics]
+verify_jwt = false
