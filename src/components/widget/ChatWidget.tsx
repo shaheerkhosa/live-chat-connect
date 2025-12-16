@@ -8,6 +8,7 @@ import { useWidgetChat } from '@/hooks/useWidgetChat';
 interface ChatWidgetProps {
   propertyId?: string;
   primaryColor?: string;
+  borderRadius?: number;
   greeting?: string;
   agentName?: string;
   agentAvatar?: string;
@@ -17,6 +18,7 @@ interface ChatWidgetProps {
 export const ChatWidget = ({
   propertyId = 'demo',
   primaryColor = 'hsl(172, 66%, 50%)',
+  borderRadius = 24,
   greeting = "Hi there! 👋 How can I help you today?",
   agentName = "Support",
   agentAvatar,
@@ -96,9 +98,19 @@ export const ChatWidget = ({
     }
   };
 
+  // Dynamic border radius styles
+  const panelRadius = `${borderRadius}px`;
+  const buttonRadius = `${Math.min(borderRadius, 32)}px`;
+  const messageRadiusLarge = `${Math.min(borderRadius, 24)}px`;
+  const messageRadiusSmall = `${Math.max(borderRadius / 3, 4)}px`;
+
   // Convert HSL string to ensure compatibility
   const widgetStyle = {
     '--widget-primary': primaryColor,
+    '--widget-radius': panelRadius,
+    '--widget-button-radius': buttonRadius,
+    '--widget-message-radius-lg': messageRadiusLarge,
+    '--widget-message-radius-sm': messageRadiusSmall,
   } as React.CSSProperties;
 
   return (
@@ -108,7 +120,10 @@ export const ChatWidget = ({
     >
       {/* Incoming Call Notification */}
       {hasIncomingCall && (
-        <div className="absolute bottom-20 right-0 w-80 bg-card/95 backdrop-blur-lg rounded-3xl shadow-xl border border-border/50 p-5 animate-fade-in">
+        <div 
+          className="absolute bottom-20 right-0 w-80 bg-card/95 backdrop-blur-lg shadow-xl border border-border/50 p-5 animate-fade-in"
+          style={{ borderRadius: panelRadius }}
+        >
           <div className="flex items-center gap-4 mb-4">
             <div 
               className="h-12 w-12 rounded-full flex items-center justify-center animate-breathe"
@@ -143,8 +158,8 @@ export const ChatWidget = ({
       {/* Video Call Panel */}
       {showVideoCall && (
         <div 
-          className="animate-scale-in mb-4 bg-card/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-border/30"
-          style={{ width: '380px', height: '520px' }}
+          className="animate-scale-in mb-4 bg-card/95 backdrop-blur-lg shadow-2xl overflow-hidden flex flex-col border border-border/30"
+          style={{ width: '380px', height: '520px', borderRadius: panelRadius }}
         >
           {/* Video Call Header */}
           <div 
@@ -209,7 +224,10 @@ export const ChatWidget = ({
 
             {/* Local Video PiP */}
             {(videoChat.status === 'connected' || videoChat.status === 'connecting' || videoChat.status === 'requesting') && (
-              <div className="absolute bottom-4 right-4 w-28 aspect-video rounded-2xl overflow-hidden shadow-lg border-2 border-white/50">
+              <div 
+                className="absolute bottom-4 right-4 w-28 aspect-video overflow-hidden shadow-lg border-2 border-white/50"
+                style={{ borderRadius: `${Math.min(borderRadius, 16)}px` }}
+              >
                 <video
                   ref={videoChat.localVideoRef}
                   autoPlay
@@ -261,8 +279,8 @@ export const ChatWidget = ({
       {/* Chat Panel */}
       {isOpen && !showVideoCall && (
         <div 
-          className="animate-scale-in mb-4 bg-card/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-border/30"
-          style={{ width: '380px', height: '520px' }}
+          className="animate-scale-in mb-4 bg-card/95 backdrop-blur-lg shadow-2xl overflow-hidden flex flex-col border border-border/30"
+          style={{ width: '380px', height: '520px', borderRadius: panelRadius }}
         >
           {/* Header */}
           <div 
@@ -275,7 +293,10 @@ export const ChatWidget = ({
               style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%)' }}
             />
             <div className="flex items-center gap-3 relative z-10">
-              <div className="h-11 w-11 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <div 
+                className="h-11 w-11 bg-white/20 backdrop-blur-sm flex items-center justify-center"
+                style={{ borderRadius: buttonRadius }}
+              >
                 <MessageCircle className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -329,8 +350,8 @@ export const ChatWidget = ({
               >
                 {msg.sender_type === 'agent' && (
                   <div 
-                    className="h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
-                    style={{ background: 'var(--widget-primary)' }}
+                    className="h-9 w-9 flex items-center justify-center flex-shrink-0 shadow-sm"
+                    style={{ background: 'var(--widget-primary)', borderRadius: buttonRadius }}
                   >
                     <MessageCircle className="h-4 w-4 text-white" />
                   </div>
@@ -339,13 +360,19 @@ export const ChatWidget = ({
                   className={cn(
                     "max-w-[75%] px-4 py-3 shadow-sm",
                     msg.sender_type === 'visitor'
-                      ? "rounded-3xl rounded-br-lg"
-                      : "bg-card rounded-3xl rounded-bl-lg border border-border/30"
+                      ? ""
+                      : "bg-card border border-border/30"
                   )}
-                  style={msg.sender_type === 'visitor' ? { 
-                    background: 'var(--widget-primary)', 
-                    color: 'white' 
-                  } : {}}
+                  style={msg.sender_type === 'visitor' 
+                    ? { 
+                        background: 'var(--widget-primary)', 
+                        color: 'white',
+                        borderRadius: `${messageRadiusLarge} ${messageRadiusLarge} ${messageRadiusSmall} ${messageRadiusLarge}`
+                      } 
+                    : {
+                        borderRadius: `${messageRadiusLarge} ${messageRadiusLarge} ${messageRadiusLarge} ${messageRadiusSmall}`
+                      }
+                  }
                 >
                   <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                   <p className={cn(
@@ -361,12 +388,15 @@ export const ChatWidget = ({
             {isTyping && (
               <div className="flex gap-3 items-end animate-fade-in">
                 <div 
-                  className="h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm"
-                  style={{ background: 'var(--widget-primary)' }}
+                  className="h-9 w-9 flex items-center justify-center flex-shrink-0 shadow-sm"
+                  style={{ background: 'var(--widget-primary)', borderRadius: buttonRadius }}
                 >
                   <MessageCircle className="h-4 w-4 text-white" />
                 </div>
-                <div className="bg-card rounded-3xl rounded-bl-lg px-4 py-3 shadow-sm border border-border/30">
+                <div 
+                  className="bg-card px-4 py-3 shadow-sm border border-border/30"
+                  style={{ borderRadius: `${messageRadiusLarge} ${messageRadiusLarge} ${messageRadiusLarge} ${messageRadiusSmall}` }}
+                >
                   <div className="flex gap-1.5">
                     <span className="h-2 w-2 bg-muted-foreground/40 rounded-full animate-typing-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="h-2 w-2 bg-muted-foreground/40 rounded-full animate-typing-bounce" style={{ animationDelay: '150ms' }} />
@@ -389,13 +419,14 @@ export const ChatWidget = ({
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Share what's on your mind..."
-                className="flex-1 px-5 py-3 rounded-full border border-border/50 bg-background/80 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all duration-300 placeholder:text-muted-foreground/60"
+                className="flex-1 px-5 py-3 border border-border/50 bg-background/80 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all duration-300 placeholder:text-muted-foreground/60"
+                style={{ borderRadius: `${Math.min(borderRadius, 24)}px` }}
               />
               <button
                 onClick={handleSend}
                 disabled={!inputValue.trim()}
-                className="h-11 w-11 rounded-full flex items-center justify-center transition-all duration-300 disabled:opacity-40 hover:scale-105 active:scale-95 shadow-md"
-                style={{ background: 'var(--widget-primary)' }}
+                className="h-11 w-11 flex items-center justify-center transition-all duration-300 disabled:opacity-40 hover:scale-105 active:scale-95 shadow-md"
+                style={{ background: 'var(--widget-primary)', borderRadius: buttonRadius }}
               >
                 <Send className="h-4 w-4 text-white" />
               </button>
@@ -408,10 +439,10 @@ export const ChatWidget = ({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "h-16 w-16 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 hover:scale-110 active:scale-95",
+          "h-16 w-16 flex items-center justify-center shadow-xl transition-all duration-300 hover:scale-110 active:scale-95",
           isOpen && "rotate-90"
         )}
-        style={{ background: 'var(--widget-primary)' }}
+        style={{ background: 'var(--widget-primary)', borderRadius: buttonRadius }}
       >
         {isOpen ? (
           <X className="h-6 w-6 text-white" />

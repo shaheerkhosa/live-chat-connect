@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Copy, Check, ArrowLeft, Code, Palette, Settings2, Globe, Loader2, Building2 } from 'lucide-react';
+import { Copy, Check, ArrowLeft, Code, Palette, Loader2, Building2, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ChatWidget } from '@/components/widget/ChatWidget';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Slider } from '@/components/ui/slider';
 import {
   Select,
   SelectContent,
@@ -26,6 +27,13 @@ const colorPresets = [
   { name: 'Dusty Rose', color: 'hsl(350, 25%, 55%)' },
   { name: 'Warm Gray', color: 'hsl(30, 15%, 50%)' },
   { name: 'Ocean', color: 'hsl(190, 30%, 45%)' },
+];
+
+const stylePresets = [
+  { name: 'Bubbly', radius: 24, description: 'Soft, friendly rounded corners' },
+  { name: 'Modern', radius: 12, description: 'Clean, contemporary look' },
+  { name: 'Sharp', radius: 4, description: 'Professional, minimal rounding' },
+  { name: 'Custom', radius: null, description: 'Set your own corner radius' },
 ];
 
 // Convert hex to HSL
@@ -60,8 +68,10 @@ const WidgetPreview = () => {
   const [agentName, setAgentName] = useState('Support Team');
   const [greeting, setGreeting] = useState("Hi there! 👋 How can I help you today?");
   const [copied, setCopied] = useState(false);
-  const [websiteUrl, setWebsiteUrl] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
+  const [borderRadius, setBorderRadius] = useState(24);
+  const [selectedStyle, setSelectedStyle] = useState('Bubbly');
+  const [extractedFont, setExtractedFont] = useState<string | null>(null);
 
   // Auto-select first property and load its settings when properties load
   useEffect(() => {
@@ -71,6 +81,8 @@ const WidgetPreview = () => {
       // Load property settings
       if (firstProperty.widget_color) setPrimaryColor(firstProperty.widget_color);
       if (firstProperty.greeting) setGreeting(firstProperty.greeting);
+      // Auto-extract brand from property domain
+      extractBrandFromProperty(firstProperty.domain);
     }
   }, [properties, selectedPropertyId]);
 
@@ -81,30 +93,35 @@ const WidgetPreview = () => {
     if (property) {
       if (property.widget_color) setPrimaryColor(property.widget_color);
       if (property.greeting) setGreeting(property.greeting);
+      // Auto-extract brand from the new property's domain
+      extractBrandFromProperty(property.domain);
     }
   };
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
 
-  const extractBrandColors = async () => {
-    if (!websiteUrl.trim()) {
-      toast.error('Please enter a website URL');
-      return;
-    }
+  const extractBrandFromProperty = async (domain: string) => {
+    if (!domain) return;
 
     setIsExtracting(true);
     try {
+      // Format the domain as a URL
+      let url = domain.trim();
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = `https://${url}`;
+      }
+
       const { data, error } = await supabase.functions.invoke('extract-brand-colors', {
-        body: { url: websiteUrl }
+        body: { url }
       });
 
       if (error) throw error;
 
       if (data.success && data.branding) {
-        const { primaryColor: extractedColor, colors } = data.branding;
+        const { colors, typography } = data.branding;
         
         // Try to get the best color (primary > accent > first available)
-        let colorToUse = extractedColor || colors?.primary || colors?.accent;
+        let colorToUse = colors?.primary || colors?.accent;
         
         if (colorToUse) {
           // Convert hex to HSL if needed
@@ -112,31 +129,49 @@ const WidgetPreview = () => {
             colorToUse = hexToHsl(colorToUse);
           }
           setPrimaryColor(colorToUse);
-          toast.success('Brand colors extracted successfully!');
-        } else {
-          toast.error('Could not find brand colors on this website');
         }
-      } else {
-        toast.error(data.error || 'Failed to extract brand colors');
+
+        // Extract font if available
+        if (typography?.fontFamilies?.primary) {
+          setExtractedFont(typography.fontFamilies.primary);
+        }
+
+        toast.success('Brand styles extracted from your website!');
       }
     } catch (error) {
       console.error('Error extracting brand colors:', error);
-      toast.error('Failed to extract brand colors from website');
+      // Silently fail - user can still customize manually
     } finally {
       setIsExtracting(false);
     }
   };
 
-  const widgetScript = selectedPropertyId ? `<!-- LiveChat Widget -->
+  const handleStyleChange = (styleName: string) => {
+    setSelectedStyle(styleName);
+    const preset = stylePresets.find(s => s.name === styleName);
+    if (preset && preset.radius !== null) {
+      setBorderRadius(preset.radius);
+    }
+  };
+
+  const handleRadiusChange = (value: number[]) => {
+    setBorderRadius(value[0]);
+    // If user changes radius manually, switch to Custom
+    const matchingStyle = stylePresets.find(s => s.radius === value[0]);
+    setSelectedStyle(matchingStyle?.name || 'Custom');
+  };
+
+  const widgetScript = selectedPropertyId ? `<!-- Scaled Bot Widget -->
 <script>
   (function(w,d,s,o,f,js,fjs){
-    w['LiveChat']=o;w[o]=w[o]||function(){(w[o].q=w[o].q||[]).push(arguments)};
+    w['ScaledBot']=o;w[o]=w[o]||function(){(w[o].q=w[o].q||[]).push(arguments)};
     js=d.createElement(s);fjs=d.getElementsByTagName(s)[0];
     js.id=o;js.src=f;js.async=1;fjs.parentNode.insertBefore(js,fjs);
-  }(window,document,'script','lc','https://your-domain.com/widget.js'));
-  lc('init', {
+  }(window,document,'script','sb','https://your-domain.com/widget.js'));
+  sb('init', {
     propertyId: '${selectedPropertyId}',
     primaryColor: '${primaryColor}',
+    borderRadius: ${borderRadius},
     agentName: '${agentName}',
     greeting: '${greeting}'
   });
@@ -240,52 +275,62 @@ const WidgetPreview = () => {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Settings */}
           <div className="space-y-6">
-            <Tabs defaultValue="appearance">
+            <Tabs defaultValue="widget">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="appearance" className="gap-2">
+                <TabsTrigger value="widget" className="gap-2">
                   <Palette className="h-4 w-4" />
-                  Appearance
+                  Widget
                 </TabsTrigger>
-                <TabsTrigger value="settings" className="gap-2">
-                  <Settings2 className="h-4 w-4" />
-                  Settings
+                <TabsTrigger value="code" className="gap-2">
+                  <Code className="h-4 w-4" />
+                  Embed Code
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="appearance" className="mt-6 space-y-6">
-                {/* Extract from Website */}
+              <TabsContent value="widget" className="mt-6 space-y-6">
+                {/* Style Preset */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Globe className="h-4 w-4" />
-                      Match Your Website
-                    </CardTitle>
-                    <CardDescription>
-                      Paste your website URL to automatically extract brand colors
-                    </CardDescription>
+                    <CardTitle className="text-base">Widget Style</CardTitle>
+                    <CardDescription>Choose a preset style or customize the corner radius</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="flex gap-2">
-                      <Input
-                        value={websiteUrl}
-                        onChange={(e) => setWebsiteUrl(e.target.value)}
-                        placeholder="https://yourwebsite.com"
-                        className="flex-1"
+                  <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                      <Label>Style Preset</Label>
+                      <Select value={selectedStyle} onValueChange={handleStyleChange}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {stylePresets.map((style) => (
+                            <SelectItem key={style.name} value={style.name}>
+                              <div className="flex flex-col">
+                                <span>{style.name}</span>
+                                <span className="text-xs text-muted-foreground">{style.description}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label>Corner Radius</Label>
+                        <span className="text-sm text-muted-foreground">{borderRadius}px</span>
+                      </div>
+                      <Slider
+                        value={[borderRadius]}
+                        onValueChange={handleRadiusChange}
+                        max={32}
+                        min={0}
+                        step={2}
+                        className="w-full"
                       />
-                      <Button 
-                        onClick={extractBrandColors} 
-                        disabled={isExtracting}
-                        variant="secondary"
-                      >
-                        {isExtracting ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Extracting...
-                          </>
-                        ) : (
-                          'Extract'
-                        )}
-                      </Button>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Sharp</span>
+                        <span>Rounded</span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -294,7 +339,15 @@ const WidgetPreview = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Brand Color</CardTitle>
-                    <CardDescription>Choose your primary widget color</CardDescription>
+                    <CardDescription>
+                      Choose your primary widget color
+                      {isExtracting && (
+                        <span className="flex items-center gap-2 mt-1 text-primary">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Extracting from your website...
+                        </span>
+                      )}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-6 gap-3 mb-4">
@@ -318,12 +371,11 @@ const WidgetPreview = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
 
-              <TabsContent value="settings" className="mt-6 space-y-6">
+                {/* Widget Settings */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Widget Settings</CardTitle>
+                    <CardTitle className="text-base">Display Settings</CardTitle>
                     <CardDescription>Configure how your widget appears to visitors</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -345,54 +397,64 @@ const WidgetPreview = () => {
                         placeholder="Hi there! How can I help?"
                       />
                     </div>
+                    {extractedFont && (
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-xs text-muted-foreground">
+                          <Sparkles className="h-3 w-3 inline mr-1" />
+                          Detected font from your website: <span className="font-medium text-foreground">{extractedFont}</span>
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="code" className="mt-6">
+                {/* Embed Code */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Code className="h-5 w-5" />
+                      Embed Code
+                      {selectedProperty && (
+                        <span className="text-xs font-normal text-muted-foreground ml-2">
+                          for {selectedProperty.name}
+                        </span>
+                      )}
+                    </CardTitle>
+                    <CardDescription>
+                      Add this code to your website's HTML, just before the closing &lt;/body&gt; tag
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="relative">
+                      <pre className="bg-sidebar text-sidebar-foreground p-4 rounded-lg text-sm overflow-x-auto">
+                        <code>{widgetScript}</code>
+                      </pre>
+                      <Button
+                        onClick={handleCopy}
+                        size="sm"
+                        variant="secondary"
+                        className="absolute top-2 right-2"
+                        disabled={!selectedPropertyId}
+                      >
+                        {copied ? (
+                          <>
+                            <Check className="h-4 w-4 mr-1" />
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-4 w-4 mr-1" />
+                            Copy
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
             </Tabs>
-
-            {/* Embed Code */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Code className="h-5 w-5" />
-                  Embed Code
-                  {selectedProperty && (
-                    <span className="text-xs font-normal text-muted-foreground ml-2">
-                      for {selectedProperty.name}
-                    </span>
-                  )}
-                </CardTitle>
-                <CardDescription>
-                  Add this code to your website's HTML, just before the closing &lt;/body&gt; tag
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="relative">
-                  <pre className="bg-sidebar text-sidebar-foreground p-4 rounded-lg text-sm overflow-x-auto">
-                    <code>{widgetScript}</code>
-                  </pre>
-                  <Button
-                    onClick={handleCopy}
-                    size="sm"
-                    variant="secondary"
-                    className="absolute top-2 right-2"
-                    disabled={!selectedPropertyId}
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="h-4 w-4 mr-1" />
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-4 w-4 mr-1" />
-                        Copy
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Preview */}
@@ -400,7 +462,10 @@ const WidgetPreview = () => {
             <Card className="overflow-hidden">
               <CardHeader className="bg-muted/50">
                 <CardTitle className="text-base">Live Preview</CardTitle>
-                <CardDescription>See how your widget will look on your website</CardDescription>
+                <CardDescription className="flex items-center gap-2">
+                  <Sparkles className="h-3 w-3" />
+                  We automatically extract colors and fonts from your website to match your brand
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="relative h-[600px] bg-gradient-to-br from-secondary to-muted">
@@ -423,6 +488,7 @@ const WidgetPreview = () => {
                     <ChatWidget
                       propertyId={selectedPropertyId || ''}
                       primaryColor={primaryColor}
+                      borderRadius={borderRadius}
                       agentName={agentName}
                       greeting={greeting}
                       isPreview={true}
