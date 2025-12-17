@@ -112,9 +112,17 @@ serve(async (req: Request): Promise<Response> => {
     });
 
     if (!emailResponse.ok) {
-      const errorData = await emailResponse.text();
+      const errorData = await emailResponse.json();
       console.error("Resend API error:", errorData);
-      throw new Error(`Failed to send email: ${errorData}`);
+      
+      // Check for domain verification error
+      if (errorData.statusCode === 403 && errorData.message?.includes('verify a domain')) {
+        throw new Error(
+          "Resend is in test mode. To send invitations to other people, verify your domain at resend.com/domains. For testing, you can only send to your own email."
+        );
+      }
+      
+      throw new Error(errorData.message || "Failed to send email");
     }
 
     const emailResult = await emailResponse.json();
