@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useConversations';
+import { PropertySelector } from '@/components/PropertySelector';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -64,7 +65,7 @@ interface PropertySettings {
 const Settings = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { properties, createProperty } = useConversations();
+  const { properties, createProperty, deleteProperty } = useConversations();
   
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
   const [settings, setSettings] = useState<PropertySettings | null>(null);
@@ -287,18 +288,15 @@ const Settings = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a property" />
-                </SelectTrigger>
-                <SelectContent>
-                  {properties.map((prop) => (
-                    <SelectItem key={prop.id} value={prop.id}>
-                      {prop.name} ({prop.domain})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <PropertySelector
+                properties={properties}
+                selectedPropertyId={selectedPropertyId}
+                onPropertyChange={setSelectedPropertyId}
+                onDeleteProperty={deleteProperty}
+                showDomain
+                showIcon={false}
+                className="w-full"
+              />
             </CardContent>
           </Card>
 
