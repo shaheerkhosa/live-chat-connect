@@ -2,13 +2,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import { AuthProvider } from "./hooks/useAuth";
+import { AuthProvider, useAuth } from "./hooks/useAuth";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import WidgetPreview from "./pages/WidgetPreview";
 import Analytics from "./pages/Analytics";
+import Agents from "./pages/Agents";
 import Auth from "./pages/Auth";
 import AdminDashboard from "./pages/AdminDashboard";
 import AgentDashboard from "./pages/AgentDashboard";
@@ -18,6 +19,57 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Route guard for clients only
+const RequireClient = ({ children }: { children: React.ReactNode }) => {
+  const { isClient, isAdmin, loading } = useAuth();
+  
+  if (loading) return null;
+  
+  if (!isClient && !isAdmin) {
+    return <Navigate to="/conversations" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+// Route guard for agents only
+const RequireAgent = ({ children }: { children: React.ReactNode }) => {
+  const { isAgent, loading } = useAuth();
+  
+  if (loading) return null;
+  
+  if (!isAgent) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+const AppRoutes = () => {
+  return (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/conversations" element={<RequireAgent><AgentDashboard /></RequireAgent>} />
+      <Route path="/onboarding" element={<Onboarding />} />
+      
+      {/* Client routes */}
+      <Route path="/dashboard" element={<RequireClient><Dashboard /></RequireClient>} />
+      <Route path="/dashboard/active" element={<RequireClient><Dashboard /></RequireClient>} />
+      <Route path="/dashboard/pending" element={<RequireClient><Dashboard /></RequireClient>} />
+      <Route path="/dashboard/closed" element={<RequireClient><Dashboard /></RequireClient>} />
+      <Route path="/dashboard/agents" element={<RequireClient><Agents /></RequireClient>} />
+      <Route path="/dashboard/analytics" element={<RequireClient><Analytics /></RequireClient>} />
+      <Route path="/dashboard/widget" element={<RequireClient><WidgetPreview /></RequireClient>} />
+      <Route path="/dashboard/settings" element={<RequireClient><Settings /></RequireClient>} />
+      
+      <Route path="/widget-preview" element={<WidgetPreview />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
@@ -26,24 +78,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/conversations" element={<AgentDashboard />} />
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/dashboard/active" element={<Dashboard />} />
-              <Route path="/dashboard/pending" element={<Dashboard />} />
-              <Route path="/dashboard/closed" element={<Dashboard />} />
-              <Route path="/dashboard/properties" element={<Dashboard />} />
-              <Route path="/dashboard/agents" element={<Dashboard />} />
-              <Route path="/dashboard/analytics" element={<Analytics />} />
-              <Route path="/dashboard/widget" element={<WidgetPreview />} />
-              <Route path="/dashboard/settings" element={<Settings />} />
-              <Route path="/widget-preview" element={<WidgetPreview />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <AppRoutes />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

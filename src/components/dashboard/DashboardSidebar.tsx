@@ -3,7 +3,6 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   MessageSquare,
   Users, 
-  Globe, 
   Settings, 
   BarChart3, 
   Code, 
@@ -16,7 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuth } from '@/hooks/useAuth';
 import scaledBotLogo from '@/assets/scaled-bot-logo.png';
@@ -83,7 +82,7 @@ export const DashboardSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const { profile } = useUserProfile();
-  const { signOut, user } = useAuth();
+  const { signOut, user, isClient, isAgent, isAdmin } = useAuth();
   
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User';
   const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -123,22 +122,31 @@ export const DashboardSidebar = () => {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-6 scrollbar-thin">
-        <SidebarSection title="Inbox" collapsed={collapsed}>
-          <SidebarItem to="/dashboard" icon={Inbox} label="All Conversations" badge={3} collapsed={collapsed} />
-          <SidebarItem to="/dashboard/active" icon={MessageSquare} label="Active" badge={2} collapsed={collapsed} />
-          <SidebarItem to="/dashboard/pending" icon={Clock} label="Pending" badge={1} collapsed={collapsed} />
-          <SidebarItem to="/dashboard/closed" icon={Archive} label="Closed" collapsed={collapsed} />
-        </SidebarSection>
+        {/* Inbox - Available to clients and admins */}
+        {(isClient || isAdmin) && (
+          <SidebarSection title="Inbox" collapsed={collapsed}>
+            <SidebarItem to="/dashboard" icon={Inbox} label="All Conversations" badge={3} collapsed={collapsed} />
+            <SidebarItem to="/dashboard/active" icon={MessageSquare} label="Active" badge={2} collapsed={collapsed} />
+            <SidebarItem to="/dashboard/pending" icon={Clock} label="Pending" badge={1} collapsed={collapsed} />
+            <SidebarItem to="/dashboard/closed" icon={Archive} label="Closed" collapsed={collapsed} />
+          </SidebarSection>
+        )}
 
-        <SidebarSection title="Manage" collapsed={collapsed}>
-          <SidebarItem to="/dashboard/agents" icon={Users} label="Agents" collapsed={collapsed} />
-          <SidebarItem to="/dashboard/analytics" icon={BarChart3} label="Analytics" collapsed={collapsed} />
-        </SidebarSection>
+        {/* Manage - Available to clients and admins */}
+        {(isClient || isAdmin) && (
+          <SidebarSection title="Manage" collapsed={collapsed}>
+            <SidebarItem to="/dashboard/agents" icon={Users} label="Agents" collapsed={collapsed} />
+            <SidebarItem to="/dashboard/analytics" icon={BarChart3} label="Analytics" collapsed={collapsed} />
+          </SidebarSection>
+        )}
 
-        <SidebarSection title="Setup" collapsed={collapsed}>
-          <SidebarItem to="/dashboard/widget" icon={Code} label="Widget Code" collapsed={collapsed} />
-          <SidebarItem to="/dashboard/settings" icon={Settings} label="Settings" collapsed={collapsed} />
-        </SidebarSection>
+        {/* Setup - Available to clients and admins */}
+        {(isClient || isAdmin) && (
+          <SidebarSection title="Setup" collapsed={collapsed}>
+            <SidebarItem to="/dashboard/widget" icon={Code} label="Widget Code" collapsed={collapsed} />
+            <SidebarItem to="/dashboard/settings" icon={Settings} label="Settings" collapsed={collapsed} />
+          </SidebarSection>
+        )}
       </nav>
 
       {/* User Profile */}
