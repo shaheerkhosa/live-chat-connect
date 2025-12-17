@@ -118,6 +118,61 @@ export default function Auth() {
     }
   }, [user, role, loading, navigate]);
 
+  // Accept invitation for existing users after login
+  const acceptInvitationForExistingUser = async (userId: string, userEmail: string) => {
+    if (!inviteToken) return;
+
+    // Find pending invitation matching this token and email
+    const { data: agent, error: agentError } = await supabase
+      .from('agents')
+      .select('id, email, invitation_expires_at')
+      .eq('invitation_token', inviteToken)
+      .eq('invitation_status', 'pending')
+      .eq('email', userEmail)
+      .maybeSingle();
+
+    if (agentError || !agent) {
+      console.log('No matching pending invitation found');
+      return;
+    }
+
+    // Check if expired
+    if (agent.invitation_expires_at && new Date(agent.invitation_expires_at) < new Date()) {
+      toast({
+        title: 'Invitation Expired',
+        description: 'This invitation has expired. Please ask for a new one.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Update agent record to link user and mark accepted
+    const { error: updateError } = await supabase
+      .from('agents')
+      .update({
+        user_id: userId,
+        invitation_status: 'accepted',
+        invitation_token: null,
+        invitation_expires_at: null,
+      })
+      .eq('id', agent.id);
+
+    if (updateError) {
+      console.error('Error accepting invitation:', updateError);
+      return;
+    }
+
+    // Add agent role
+    await supabase
+      .from('user_roles')
+      .upsert({ user_id: userId, role: 'agent' }, { onConflict: 'user_id' });
+
+    toast({
+      title: 'Welcome to the team!',
+      description: 'You have successfully joined as an agent.',
+    });
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -133,9 +188,9 @@ export default function Auth() {
 
     setIsLoading(true);
     const { error } = await signIn(loginEmail, loginPassword);
-    setIsLoading(false);
-
+    
     if (error) {
+      setIsLoading(false);
       toast({
         title: 'Login Failed',
         description: error.message === 'Invalid login credentials' 
@@ -143,7 +198,18 @@ export default function Auth() {
           : error.message,
         variant: 'destructive',
       });
+      return;
     }
+
+    // If logging in with an invite token, accept the invitation
+    if (inviteToken) {
+      const { data: { user: loggedInUser } } = await supabase.auth.getUser();
+      if (loggedInUser) {
+        await acceptInvitationForExistingUser(loggedInUser.id, loggedInUser.email || loginEmail);
+      }
+    }
+
+    setIsLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
