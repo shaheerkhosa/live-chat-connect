@@ -142,7 +142,7 @@ const Agents = () => {
 
       const isExistingUser = !!existingProfile;
 
-      // Create agent record
+      // Create agent record - always set to pending until they accept
       const { data: newAgent, error: agentError } = await supabase
         .from('agents')
         .insert({
@@ -150,7 +150,7 @@ const Agents = () => {
           email,
           user_id: existingProfile?.user_id || user.id,
           invited_by: user.id,
-          invitation_status: isExistingUser ? 'accepted' : 'pending',
+          invitation_status: 'pending',
           status: 'offline',
         })
         .select()
@@ -172,31 +172,14 @@ const Agents = () => {
         await supabase.from('property_agents').insert(assignments);
       }
 
-      // If existing user, update their role
-      if (isExistingUser && existingProfile) {
-        await supabase
-          .from('user_roles')
-          .upsert(
-            {
-              user_id: existingProfile.user_id,
-              role: 'agent',
-            },
-            {
-              onConflict: 'user_id',
-            }
-          );
-
-        toast.success('Agent added (existing account). No invitation email was sent.');
-      } else {
-        // Send invitation email for new users
-        try {
-          await sendInvitationEmail(newAgent.id, name, email);
-          toast.success('Invitation sent! They will receive an email to join.');
-        } catch (emailError) {
-          console.error('Failed to send email:', emailError);
-          const message = emailError instanceof Error ? emailError.message : String(emailError);
-          toast.error(`Email failed to send: ${message}`);
-        }
+      // Always send invitation email - existing users also need to accept
+      try {
+        await sendInvitationEmail(newAgent.id, name, email);
+        toast.success('Invitation sent! They will receive an email to join.');
+      } catch (emailError) {
+        console.error('Failed to send email:', emailError);
+        const message = emailError instanceof Error ? emailError.message : String(emailError);
+        toast.error(`Email failed to send: ${message}`);
       }
 
       setIsInviteDialogOpen(false);
