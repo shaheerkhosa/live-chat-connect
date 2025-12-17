@@ -111,6 +111,15 @@ const Agents = () => {
   const handleInviteAgent = async () => {
     if (!inviteEmail.trim() || !inviteName.trim() || !user) return;
 
+    const email = inviteEmail.trim().toLowerCase();
+    const name = inviteName.trim();
+
+    // Prevent confusing self-invites (would instantly be "Active" and no email is sent)
+    if (user.email && email === user.email.toLowerCase()) {
+      toast.error("You can't invite your own email address.");
+      return;
+    }
+
     setIsInviting(true);
 
     try {
@@ -118,7 +127,7 @@ const Agents = () => {
       const { data: existingAgent } = await supabase
         .from('agents')
         .select('id')
-        .eq('email', inviteEmail.trim())
+        .eq('email', email)
         .eq('invited_by', user.id)
         .maybeSingle();
 
@@ -132,7 +141,7 @@ const Agents = () => {
       const { data: existingProfile } = await supabase
         .from('profiles')
         .select('user_id')
-        .eq('email', inviteEmail.trim())
+        .eq('email', email)
         .maybeSingle();
 
       const isExistingUser = !!existingProfile;
@@ -141,8 +150,8 @@ const Agents = () => {
       const { data: newAgent, error: agentError } = await supabase
         .from('agents')
         .insert({
-          name: inviteName.trim(),
-          email: inviteEmail.trim(),
+          name,
+          email,
           user_id: existingProfile?.user_id || user.id,
           invited_by: user.id,
           invitation_status: isExistingUser ? 'accepted' : 'pending',
@@ -159,7 +168,7 @@ const Agents = () => {
 
       // Assign to selected properties
       if (selectedPropertyIds.length > 0 && newAgent) {
-        const assignments = selectedPropertyIds.map(propertyId => ({
+        const assignments = selectedPropertyIds.map((propertyId) => ({
           agent_id: newAgent.id,
           property_id: propertyId,
         }));
@@ -171,22 +180,26 @@ const Agents = () => {
       if (isExistingUser && existingProfile) {
         await supabase
           .from('user_roles')
-          .upsert({ 
-            user_id: existingProfile.user_id, 
-            role: 'agent' 
-          }, { 
-            onConflict: 'user_id' 
-          });
-        
-        toast.success('Agent added successfully! They can now access conversations.');
+          .upsert(
+            {
+              user_id: existingProfile.user_id,
+              role: 'agent',
+            },
+            {
+              onConflict: 'user_id',
+            }
+          );
+
+        toast.success('Agent added (existing account). No invitation email was sent.');
       } else {
         // Send invitation email for new users
         try {
-          await sendInvitationEmail(newAgent.id, inviteName.trim(), inviteEmail.trim());
+          await sendInvitationEmail(newAgent.id, name, email);
           toast.success('Invitation sent! They will receive an email to join.');
         } catch (emailError) {
           console.error('Failed to send email:', emailError);
-          toast.warning('Agent created but email failed to send. Try resending.');
+          const message = emailError instanceof Error ? emailError.message : String(emailError);
+          toast.error(`Email failed to send: ${message}`);
         }
       }
 
