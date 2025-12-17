@@ -114,11 +114,7 @@ const Agents = () => {
     const email = inviteEmail.trim().toLowerCase();
     const name = inviteName.trim();
 
-    // Prevent confusing self-invites (would instantly be "Active" and no email is sent)
-    if (user.email && email === user.email.toLowerCase()) {
-      toast.error("You can't invite your own email address.");
-      return;
-    }
+    // Note: Self-invites are allowed for testing purposes (Resend test mode only sends to owner email)
 
     setIsInviting(true);
 
