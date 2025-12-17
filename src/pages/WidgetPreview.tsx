@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useConversations } from '@/hooks/useConversations';
+import { PropertySelector } from '@/components/PropertySelector';
 
 const colorPresets = [
   { name: 'Sage', color: 'hsl(150, 25%, 45%)' },
@@ -62,7 +63,7 @@ const hexToHsl = (hex: string): string => {
 };
 
 const WidgetPreview = () => {
-  const { properties, loading } = useConversations();
+  const { properties, loading, deleteProperty } = useConversations();
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | undefined>();
   const [primaryColor, setPrimaryColor] = useState('hsl(150, 25%, 45%)');
   const [agentName, setAgentName] = useState('Support Team');
@@ -249,19 +250,12 @@ const WidgetPreview = () => {
             </div>
             <div className="flex items-center gap-4">
               {/* Property Selector */}
-              <Select value={selectedPropertyId} onValueChange={handlePropertyChange}>
-                <SelectTrigger className="w-[220px]">
-                  <Building2 className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <SelectValue placeholder="Select property" />
-                </SelectTrigger>
-                <SelectContent>
-                  {properties.map((property) => (
-                    <SelectItem key={property.id} value={property.id}>
-                      {property.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <PropertySelector
+                properties={properties}
+                selectedPropertyId={selectedPropertyId}
+                onPropertyChange={handlePropertyChange}
+                onDeleteProperty={deleteProperty}
+              />
               <ThemeToggle />
             </div>
           </div>

@@ -3,16 +3,10 @@ import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { BlogAnalytics } from '@/components/dashboard/BlogAnalytics';
 import { BarChart3, Building2, Loader2 } from 'lucide-react';
 import { useConversations } from '@/hooks/useConversations';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { PropertySelector } from '@/components/PropertySelector';
 
 const Analytics = () => {
-  const { properties, loading } = useConversations();
+  const { properties, loading, deleteProperty } = useConversations();
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | undefined>();
 
   // Auto-select first property when properties load
@@ -46,19 +40,12 @@ const Analytics = () => {
               <span className="text-sm">Loading...</span>
             </div>
           ) : properties.length > 0 ? (
-            <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-              <SelectTrigger className="w-[220px]">
-                <Building2 className="h-4 w-4 mr-2 text-muted-foreground" />
-                <SelectValue placeholder="Select property" />
-              </SelectTrigger>
-              <SelectContent>
-                {properties.map((property) => (
-                  <SelectItem key={property.id} value={property.id}>
-                    {property.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <PropertySelector
+              properties={properties}
+              selectedPropertyId={selectedPropertyId}
+              onPropertyChange={setSelectedPropertyId}
+              onDeleteProperty={deleteProperty}
+            />
           ) : null}
         </div>
 

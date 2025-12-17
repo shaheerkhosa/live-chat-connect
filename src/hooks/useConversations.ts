@@ -189,6 +189,23 @@ export const useConversations = () => {
     return data;
   };
 
+  const deleteProperty = async (propertyId: string) => {
+    const { error } = await supabase
+      .from('properties')
+      .delete()
+      .eq('id', propertyId);
+
+    if (error) {
+      console.error('Error deleting property:', error);
+      toast.error('Failed to delete property');
+      return false;
+    }
+
+    toast.success('Property deleted successfully');
+    await fetchProperties();
+    return true;
+  };
+
   useEffect(() => {
     if (user) {
       fetchProperties();
@@ -236,6 +253,7 @@ export const useConversations = () => {
     markMessagesAsRead,
     closeConversation,
     createProperty,
+    deleteProperty,
     refetch: fetchConversations,
   };
 };
