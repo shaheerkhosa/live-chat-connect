@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, Plus } from 'lucide-react';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { ConversationList } from '@/components/dashboard/ConversationList';
 import { ChatPanel } from '@/components/dashboard/ChatPanel';
 import { useConversations, DbConversation } from '@/hooks/useConversations';
 import { Conversation, Message } from '@/types/chat';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -15,6 +16,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 type FilterStatus = 'all' | 'active' | 'pending' | 'closed';
 
@@ -131,6 +134,72 @@ const Dashboard = () => {
     await closeConversation(selectedConversation.id);
   };
 
+  const handleCreateTestConversation = async () => {
+    if (!user || properties.length === 0) {
+      toast.error('No properties available');
+      return;
+    }
+
+    const propertyId = properties[0].id;
+    const sessionId = `test-session-${Date.now()}`;
+
+    try {
+      // Create a test visitor
+      const { data: visitor, error: visitorError } = await supabase
+        .from('visitors')
+        .insert({
+          property_id: propertyId,
+          session_id: sessionId,
+          name: `Test Visitor ${Math.floor(Math.random() * 1000)}`,
+          email: `visitor-${Date.now()}@test.local`,
+          current_page: 'https://example.com/test-page',
+          browser_info: 'Test Browser',
+          location: 'Test Location',
+        })
+        .select()
+        .single();
+
+      if (visitorError) {
+        toast.error('Failed to create visitor: ' + visitorError.message);
+        return;
+      }
+
+      // Create a test conversation
+      const { data: conversation, error: convError } = await supabase
+        .from('conversations')
+        .insert({
+          property_id: propertyId,
+          visitor_id: visitor.id,
+          status: 'pending',
+        })
+        .select()
+        .single();
+
+      if (convError) {
+        toast.error('Failed to create conversation: ' + convError.message);
+        return;
+      }
+
+      // Add some test messages
+      const testMessages = [
+        { sender_type: 'visitor', sender_id: visitor.id, content: 'Hello, I need help with something.' },
+        { sender_type: 'visitor', sender_id: visitor.id, content: 'Is anyone available to chat?' },
+      ];
+
+      for (const msg of testMessages) {
+        await supabase.from('messages').insert({
+          conversation_id: conversation.id,
+          ...msg,
+        });
+      }
+
+      toast.success('Test conversation created! Refresh to see it.');
+    } catch (error) {
+      console.error('Error creating test conversation:', error);
+      toast.error('Failed to create test conversation');
+    }
+  };
+
   const getStatusTitle = () => {
     switch (statusFilter) {
       case 'active': return 'Active Conversations';
@@ -163,9 +232,15 @@ const Dashboard = () => {
           <div className="p-4 border-b border-border space-y-3 bg-gradient-card">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-foreground">{getStatusTitle()}</h2>
-              {totalUnread > 0 && (
-                <span className="text-sm text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">{totalUnread} unread</span>
-              )}
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleCreateTestConversation} className="text-xs h-7">
+                  <Plus className="h-3 w-3 mr-1" />
+                  Test
+                </Button>
+                {totalUnread > 0 && (
+                  <span className="text-sm text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">{totalUnread} unread</span>
+                )}
+              </div>
             </div>
             
             <div className="relative">

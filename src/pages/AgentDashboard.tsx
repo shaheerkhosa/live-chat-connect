@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +7,7 @@ import { ConversationList } from '@/components/dashboard/ConversationList';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { LogOut, MessageSquare, User } from 'lucide-react';
+import { LogOut, MessageSquare, User, RefreshCw } from 'lucide-react';
 import type { Conversation, Message, Visitor } from '@/types/chat';
 
 export default function AgentDashboard() {
@@ -17,14 +17,14 @@ export default function AgentDashboard() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'away'>('online');
-  const [agentProfile, setAgentProfile] = useState<{ name: string; email: string } | null>(null);
+  const [agentProfile, setAgentProfile] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [assignedPropertyIds, setAssignedPropertyIds] = useState<string[]>([]);
 
   // Redirect if not agent
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
     } else if (!loading && !isAgent) {
-      // Non-agents go to their respective dashboards
       if (role === 'admin') {
         navigate('/admin');
       } else {
@@ -33,20 +33,30 @@ export default function AgentDashboard() {
     }
   }, [user, isAgent, loading, navigate, role]);
 
-  // Fetch agent profile
+  // Fetch agent profile and assigned properties
   useEffect(() => {
     const fetchAgentProfile = async () => {
       if (!user) return;
       
-      const { data } = await supabase
+      const { data: agentData } = await supabase
         .from('agents')
-        .select('name, email, status')
+        .select('id, name, email, status')
         .eq('user_id', user.id)
         .single();
       
-      if (data) {
-        setAgentProfile({ name: data.name, email: data.email });
-        setAgentStatus(data.status as 'online' | 'offline' | 'away');
+      if (agentData) {
+        setAgentProfile({ id: agentData.id, name: agentData.name, email: agentData.email });
+        setAgentStatus(agentData.status as 'online' | 'offline' | 'away');
+
+        // Fetch assigned properties
+        const { data: assignments } = await supabase
+          .from('property_agents')
+          .select('property_id')
+          .eq('agent_id', agentData.id);
+
+        if (assignments) {
+          setAssignedPropertyIds(assignments.map(a => a.property_id));
+        }
       }
     };
 
@@ -55,84 +65,133 @@ export default function AgentDashboard() {
     }
   }, [user, isAgent]);
 
-  // Fetch conversations assigned to this agent
+  // Fetch conversations for assigned properties
+  const fetchConversations = useCallback(async () => {
+    if (!user || assignedPropertyIds.length === 0) {
+      setConversations([]);
+      return;
+    }
+
+    const { data: convData, error } = await supabase
+      .from('conversations')
+      .select(`*, visitors!inner(*)`)
+      .in('property_id', assignedPropertyIds)
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching conversations:', error);
+      return;
+    }
+
+    if (convData) {
+      const conversationsWithMessages = await Promise.all(
+        convData.map(async (c: any) => {
+          const { data: messagesData } = await supabase
+            .from('messages')
+            .select('*')
+            .eq('conversation_id', c.id)
+            .order('created_at', { ascending: true });
+
+          const messages: Message[] = (messagesData || []).map((m: any) => ({
+            id: m.id,
+            conversationId: m.conversation_id,
+            senderId: m.sender_id,
+            senderType: m.sender_type as 'agent' | 'visitor',
+            content: m.content,
+            read: m.read,
+            timestamp: new Date(m.created_at),
+          }));
+
+          const visitor: Visitor = {
+            id: c.visitors.id,
+            name: c.visitors.name || undefined,
+            email: c.visitors.email || undefined,
+            sessionId: c.visitors.session_id,
+            propertyId: c.visitors.property_id,
+            currentPage: c.visitors.current_page || undefined,
+            browserInfo: c.visitors.browser_info || undefined,
+            location: c.visitors.location || undefined,
+            createdAt: new Date(c.visitors.created_at),
+          };
+
+          const unreadCount = messages.filter(m => !m.read && m.senderType === 'visitor').length;
+
+          const conversation: Conversation = {
+            id: c.id,
+            visitorId: c.visitor_id,
+            propertyId: c.property_id,
+            status: c.status as 'pending' | 'active' | 'closed',
+            assignedAgentId: c.assigned_agent_id,
+            createdAt: new Date(c.created_at),
+            updatedAt: new Date(c.updated_at),
+            visitor,
+            messages,
+            lastMessage: messages.length > 0 ? messages[messages.length - 1] : undefined,
+            unreadCount,
+          };
+
+          return conversation;
+        })
+      );
+
+      setConversations(conversationsWithMessages);
+    }
+  }, [user, assignedPropertyIds]);
+
+  // Fetch conversations when assigned properties change
   useEffect(() => {
-    const fetchConversations = async () => {
-      if (!user) return;
-
-      const { data: convData, error } = await supabase
-        .from('conversations')
-        .select(`
-          *,
-          visitors!inner(*)
-        `)
-        .order('updated_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching conversations:', error);
-        return;
-      }
-
-      if (convData) {
-        // Fetch messages for each conversation
-        const conversationsWithMessages = await Promise.all(
-          convData.map(async (c: any) => {
-            const { data: messagesData } = await supabase
-              .from('messages')
-              .select('*')
-              .eq('conversation_id', c.id)
-              .order('created_at', { ascending: true });
-
-            const messages: Message[] = (messagesData || []).map((m: any) => ({
-              id: m.id,
-              conversationId: m.conversation_id,
-              senderId: m.sender_id,
-              senderType: m.sender_type as 'agent' | 'visitor',
-              content: m.content,
-              read: m.read,
-              timestamp: new Date(m.created_at),
-            }));
-
-            const visitor: Visitor = {
-              id: c.visitors.id,
-              name: c.visitors.name || undefined,
-              email: c.visitors.email || undefined,
-              sessionId: c.visitors.session_id,
-              propertyId: c.visitors.property_id,
-              currentPage: c.visitors.current_page || undefined,
-              browserInfo: c.visitors.browser_info || undefined,
-              location: c.visitors.location || undefined,
-              createdAt: new Date(c.visitors.created_at),
-            };
-
-            const unreadCount = messages.filter(m => !m.read && m.senderType === 'visitor').length;
-
-            const conversation: Conversation = {
-              id: c.id,
-              visitorId: c.visitor_id,
-              propertyId: c.property_id,
-              status: c.status as 'pending' | 'active' | 'closed',
-              assignedAgentId: c.assigned_agent_id,
-              createdAt: new Date(c.created_at),
-              updatedAt: new Date(c.updated_at),
-              visitor,
-              messages,
-              lastMessage: messages.length > 0 ? messages[messages.length - 1] : undefined,
-              unreadCount,
-            };
-
-            return conversation;
-          })
-        );
-
-        setConversations(conversationsWithMessages);
-      }
-    };
-
-    if (isAgent) {
+    if (isAgent && assignedPropertyIds.length > 0) {
       fetchConversations();
     }
-  }, [user, isAgent]);
+  }, [isAgent, assignedPropertyIds, fetchConversations]);
+
+  // Real-time subscriptions for new conversations and messages
+  useEffect(() => {
+    if (!isAgent || assignedPropertyIds.length === 0) return;
+
+    // Subscribe to new conversations
+    const conversationChannel = supabase
+      .channel('agent-conversations')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversations',
+        },
+        (payload) => {
+          console.log('Conversation change:', payload);
+          // Check if it's for our assigned properties
+          const newConv = payload.new as any;
+          if (newConv && assignedPropertyIds.includes(newConv.property_id)) {
+            fetchConversations();
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to new messages
+    const messageChannel = supabase
+      .channel('agent-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        },
+        (payload) => {
+          console.log('New message:', payload);
+          fetchConversations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(conversationChannel);
+      supabase.removeChannel(messageChannel);
+    };
+  }, [isAgent, assignedPropertyIds, fetchConversations]);
 
   // Update agent status
   const updateAgentStatus = async (status: 'online' | 'offline' | 'away') => {
@@ -155,19 +214,13 @@ export default function AgentDashboard() {
   };
 
   const handleSendMessage = async (content: string) => {
-    if (!selectedConversation || !user) return;
-
-    const { data: agentData } = await supabase
-      .from('agents')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
+    if (!selectedConversation || !user || !agentProfile) return;
 
     const { error } = await supabase
       .from('messages')
       .insert({
         conversation_id: selectedConversation.id,
-        sender_id: agentData?.id || user.id,
+        sender_id: agentProfile.id,
         sender_type: 'agent',
         content,
       });
@@ -181,7 +234,7 @@ export default function AgentDashboard() {
     if (selectedConversation.status === 'pending') {
       await supabase
         .from('conversations')
-        .update({ status: 'active', assigned_agent_id: agentData?.id })
+        .update({ status: 'active', assigned_agent_id: agentProfile.id })
         .eq('id', selectedConversation.id);
     }
 
@@ -290,7 +343,12 @@ export default function AgentDashboard() {
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">Conversations</span>
             </div>
-            <Badge variant="secondary">{conversations.length}</Badge>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={fetchConversations} className="h-7 w-7">
+                <RefreshCw className="h-3.5 w-3.5" />
+              </Button>
+              <Badge variant="secondary">{conversations.length}</Badge>
+            </div>
           </div>
           
           <div className="flex-1 overflow-auto">

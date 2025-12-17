@@ -263,6 +263,49 @@ const Agents = () => {
     }
   };
 
+  const handleCreateTestAgent = async () => {
+    if (!user) return;
+
+    const testEmail = `test-agent-${Date.now()}@test.local`;
+    const testName = `Test Agent ${Math.floor(Math.random() * 1000)}`;
+
+    try {
+      // Create agent record directly as accepted
+      const { data: newAgent, error: agentError } = await supabase
+        .from('agents')
+        .insert({
+          name: testName,
+          email: testEmail,
+          user_id: user.id, // Link to current user for testing
+          invited_by: user.id,
+          invitation_status: 'accepted',
+          status: 'online',
+        })
+        .select()
+        .single();
+
+      if (agentError) {
+        toast.error('Failed to create test agent: ' + agentError.message);
+        return;
+      }
+
+      // Assign to all properties
+      if (properties.length > 0 && newAgent) {
+        const assignments = properties.map((prop) => ({
+          agent_id: newAgent.id,
+          property_id: prop.id,
+        }));
+        await supabase.from('property_agents').insert(assignments);
+      }
+
+      toast.success(`Test agent "${testName}" created and assigned to all properties!`);
+      fetchAgents();
+    } catch (error) {
+      console.error('Error creating test agent:', error);
+      toast.error('Failed to create test agent');
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gradient-subtle">
       <DashboardSidebar />
@@ -280,6 +323,9 @@ const Agents = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleCreateTestAgent} className="text-xs">
+              + Test Agent
+            </Button>
             <Button variant="outline" size="icon" onClick={fetchAgents}>
               <RefreshCw className="h-4 w-4" />
             </Button>
