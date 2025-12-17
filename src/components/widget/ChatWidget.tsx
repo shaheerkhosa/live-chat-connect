@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Minimize2, Video, Phone, PhoneOff, Mic, MicOff, VideoOff } from 'lucide-react';
+import { MessageCircle, X, Send, Minimize2, Video, Phone, PhoneOff, Mic, MicOff, VideoOff, User, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useVideoChat } from '@/hooks/useVideoChat';
@@ -28,10 +28,20 @@ export const ChatWidget = ({
   const [inputValue, setInputValue] = useState('');
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [hasIncomingCall, setHasIncomingCall] = useState(false);
+  const [leadName, setLeadName] = useState('');
+  const [leadEmail, setLeadEmail] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { messages, sendMessage, isTyping } = useWidgetChat({ propertyId, greeting });
+  const { 
+    messages, 
+    sendMessage, 
+    isTyping, 
+    settings, 
+    requiresLeadCapture, 
+    submitLeadInfo,
+    visitorInfo 
+  } = useWidgetChat({ propertyId, greeting });
 
   const videoChat = useVideoChat({
     onCallAccepted: () => {
@@ -98,6 +108,19 @@ export const ChatWidget = ({
     }
   };
 
+  const handleLeadSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = settings.require_name_before_chat ? leadName.trim() : undefined;
+    const email = settings.require_email_before_chat ? leadEmail.trim() : undefined;
+    
+    // Basic validation
+    if (settings.require_name_before_chat && !name) return;
+    if (settings.require_email_before_chat && !email) return;
+    if (email && !email.includes('@')) return;
+
+    submitLeadInfo(name, email);
+  };
+
   // Dynamic border radius styles
   const panelRadius = `${borderRadius}px`;
   const buttonRadius = `${Math.min(borderRadius, 32)}px`;
@@ -112,6 +135,9 @@ export const ChatWidget = ({
     '--widget-message-radius-lg': messageRadiusLarge,
     '--widget-message-radius-sm': messageRadiusSmall,
   } as React.CSSProperties;
+
+  // Show lead capture form
+  const showLeadForm = requiresLeadCapture && !visitorInfo.name && !visitorInfo.email;
 
   return (
     <div 
@@ -337,119 +363,169 @@ export const ChatWidget = ({
             </p>
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-background to-muted/20 scrollbar-thin">
-            {messages.map((msg, index) => (
-              <div
-                key={msg.id}
-                className={cn(
-                  "flex gap-3 animate-fade-in",
-                  msg.sender_type === 'visitor' ? "flex-row-reverse" : "flex-row"
-                )}
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                {msg.sender_type === 'agent' && (
-                  <div 
-                    className="h-9 w-9 flex items-center justify-center flex-shrink-0 shadow-sm"
-                    style={{ background: 'var(--widget-primary)', borderRadius: buttonRadius }}
-                  >
-                    <MessageCircle className="h-4 w-4 text-white" />
-                  </div>
-                )}
-                <div
-                  className={cn(
-                    "max-w-[75%] px-4 py-3 shadow-sm",
-                    msg.sender_type === 'visitor'
-                      ? ""
-                      : "bg-card border border-border/30"
-                  )}
-                  style={msg.sender_type === 'visitor' 
-                    ? { 
-                        background: 'var(--widget-primary)', 
-                        color: 'white',
-                        borderRadius: `${messageRadiusLarge} ${messageRadiusLarge} ${messageRadiusSmall} ${messageRadiusLarge}`
-                      } 
-                    : {
-                        borderRadius: `${messageRadiusLarge} ${messageRadiusLarge} ${messageRadiusLarge} ${messageRadiusSmall}`
-                      }
-                  }
-                >
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                  <p className={cn(
-                    "text-xs mt-1.5",
-                    msg.sender_type === 'visitor' ? "text-white/70" : "text-muted-foreground"
-                  )}>
-                    {format(new Date(msg.created_at), 'h:mm a')}
-                  </p>
-                </div>
-              </div>
-            ))}
-
-            {isTyping && (
-              <div className="flex gap-3 items-end animate-fade-in">
-                <div 
-                  className="h-9 w-9 flex items-center justify-center flex-shrink-0 shadow-sm"
-                  style={{ background: 'var(--widget-primary)', borderRadius: buttonRadius }}
-                >
-                  <MessageCircle className="h-4 w-4 text-white" />
-                </div>
-                <div 
-                  className="bg-card px-4 py-3 shadow-sm border border-border/30"
-                  style={{ borderRadius: `${messageRadiusLarge} ${messageRadiusLarge} ${messageRadiusLarge} ${messageRadiusSmall}` }}
-                >
-                  <div className="flex gap-1.5">
-                    <span className="h-2 w-2 bg-muted-foreground/40 rounded-full animate-typing-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="h-2 w-2 bg-muted-foreground/40 rounded-full animate-typing-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="h-2 w-2 bg-muted-foreground/40 rounded-full animate-typing-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input */}
-          <div className="p-4 border-t border-border/30 bg-card/80 backdrop-blur-sm">
-            <div className="flex gap-3">
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Share what's on your mind..."
-                className="flex-1 px-5 py-3 border border-border/50 bg-background/80 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all duration-300 placeholder:text-muted-foreground/60"
-                style={{ borderRadius: `${Math.min(borderRadius, 24)}px` }}
-              />
-              <button
-                onClick={handleSend}
-                disabled={!inputValue.trim()}
-                className="h-11 w-11 flex items-center justify-center transition-all duration-300 disabled:opacity-40 hover:scale-105 active:scale-95 shadow-md"
+          {/* Lead Capture Form */}
+          {showLeadForm ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background to-muted/20">
+              <div 
+                className="h-16 w-16 flex items-center justify-center mb-4"
                 style={{ background: 'var(--widget-primary)', borderRadius: buttonRadius }}
               >
-                <Send className="h-4 w-4 text-white" />
-              </button>
+                <MessageCircle className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Before we chat</h3>
+              <p className="text-sm text-muted-foreground text-center mb-6">
+                Please share a few details so we can better assist you.
+              </p>
+              <form onSubmit={handleLeadSubmit} className="w-full space-y-4">
+                {settings.require_name_before_chat && (
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={leadName}
+                      onChange={(e) => setLeadName(e.target.value)}
+                      placeholder="Your name"
+                      required
+                      className="w-full pl-11 pr-4 py-3 border border-border/50 bg-background/80 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all duration-300 placeholder:text-muted-foreground/60"
+                      style={{ borderRadius: `${Math.min(borderRadius, 16)}px` }}
+                    />
+                  </div>
+                )}
+                {settings.require_email_before_chat && (
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input
+                      type="email"
+                      value={leadEmail}
+                      onChange={(e) => setLeadEmail(e.target.value)}
+                      placeholder="Your email"
+                      required
+                      className="w-full pl-11 pr-4 py-3 border border-border/50 bg-background/80 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all duration-300 placeholder:text-muted-foreground/60"
+                      style={{ borderRadius: `${Math.min(borderRadius, 16)}px` }}
+                    />
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  className="w-full py-3 text-white font-medium text-sm transition-all duration-300 hover:opacity-90"
+                  style={{ background: 'var(--widget-primary)', borderRadius: `${Math.min(borderRadius, 16)}px` }}
+                >
+                  Start Chat
+                </button>
+              </form>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-background to-muted/20 scrollbar-thin">
+                {messages.map((msg, index) => (
+                  <div
+                    key={msg.id}
+                    className={cn(
+                      "flex gap-3 animate-fade-in",
+                      msg.sender_type === 'visitor' ? "flex-row-reverse" : "flex-row"
+                    )}
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    {msg.sender_type === 'agent' && (
+                      <div 
+                        className="h-9 w-9 flex items-center justify-center flex-shrink-0 shadow-sm"
+                        style={{ background: 'var(--widget-primary)', borderRadius: buttonRadius }}
+                      >
+                        <MessageCircle className="h-4 w-4 text-white" />
+                      </div>
+                    )}
+                    <div
+                      className={cn(
+                        "max-w-[75%] px-4 py-3 shadow-sm",
+                        msg.sender_type === 'visitor'
+                          ? ""
+                          : "bg-card border border-border/30"
+                      )}
+                      style={msg.sender_type === 'visitor' 
+                        ? { 
+                            background: 'var(--widget-primary)', 
+                            color: 'white',
+                            borderRadius: `${messageRadiusLarge} ${messageRadiusLarge} ${messageRadiusSmall} ${messageRadiusLarge}`
+                          } 
+                        : {
+                            borderRadius: `${messageRadiusLarge} ${messageRadiusLarge} ${messageRadiusLarge} ${messageRadiusSmall}`
+                          }
+                      }
+                    >
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                      <p className={cn(
+                        "text-xs mt-1.5",
+                        msg.sender_type === 'visitor' ? "text-white/70" : "text-muted-foreground"
+                      )}>
+                        {format(new Date(msg.created_at), 'h:mm a')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+
+                {isTyping && (
+                  <div className="flex gap-3 items-end animate-fade-in">
+                    <div 
+                      className="h-9 w-9 flex items-center justify-center flex-shrink-0 shadow-sm"
+                      style={{ background: 'var(--widget-primary)', borderRadius: buttonRadius }}
+                    >
+                      <MessageCircle className="h-4 w-4 text-white" />
+                    </div>
+                    <div 
+                      className="bg-card px-4 py-3 shadow-sm border border-border/30"
+                      style={{ borderRadius: `${messageRadiusLarge} ${messageRadiusLarge} ${messageRadiusLarge} ${messageRadiusSmall}` }}
+                    >
+                      <div className="flex gap-1.5">
+                        <span className="h-2 w-2 bg-muted-foreground/40 rounded-full animate-typing-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="h-2 w-2 bg-muted-foreground/40 rounded-full animate-typing-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="h-2 w-2 bg-muted-foreground/40 rounded-full animate-typing-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input */}
+              <div className="p-4 border-t border-border/30 bg-card/80 backdrop-blur-sm">
+                <div className="flex gap-3">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Share what's on your mind..."
+                    className="flex-1 px-5 py-3 border border-border/50 bg-background/80 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all duration-300 placeholder:text-muted-foreground/60"
+                    style={{ borderRadius: `${Math.min(borderRadius, 24)}px` }}
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={!inputValue.trim()}
+                    className="h-12 w-12 flex items-center justify-center text-white disabled:opacity-50 transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg"
+                    style={{ background: 'var(--widget-primary)', borderRadius: buttonRadius }}
+                  >
+                    <Send className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
       {/* Floating Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "h-16 w-16 flex items-center justify-center shadow-xl transition-all duration-300 hover:scale-110 active:scale-95",
-          isOpen && "rotate-90"
-        )}
-        style={{ background: 'var(--widget-primary)', borderRadius: buttonRadius }}
-      >
-        {isOpen ? (
-          <X className="h-6 w-6 text-white" />
-        ) : (
-          <MessageCircle className="h-6 w-6 text-white" />
-        )}
-      </button>
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="h-16 w-16 flex items-center justify-center text-white shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 animate-breathe"
+          style={{ background: 'var(--widget-primary)', borderRadius: buttonRadius }}
+        >
+          <MessageCircle className="h-7 w-7" />
+        </button>
+      )}
     </div>
   );
 };

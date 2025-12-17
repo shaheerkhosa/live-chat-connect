@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
@@ -8,10 +8,42 @@ interface Message {
   created_at: string;
 }
 
+interface PropertySettings {
+  ai_response_delay_min_ms: number;
+  ai_response_delay_max_ms: number;
+  typing_indicator_min_ms: number;
+  typing_indicator_max_ms: number;
+  max_ai_messages_before_escalation: number;
+  escalation_keywords: string[];
+  auto_escalation_enabled: boolean;
+  require_email_before_chat: boolean;
+  require_name_before_chat: boolean;
+  proactive_message_enabled: boolean;
+  proactive_message: string | null;
+  proactive_message_delay_seconds: number;
+  greeting: string | null;
+}
+
 interface WidgetChatConfig {
   propertyId: string;
   greeting?: string;
 }
+
+const DEFAULT_SETTINGS: PropertySettings = {
+  ai_response_delay_min_ms: 1000,
+  ai_response_delay_max_ms: 2500,
+  typing_indicator_min_ms: 1500,
+  typing_indicator_max_ms: 3000,
+  max_ai_messages_before_escalation: 5,
+  escalation_keywords: ['crisis', 'emergency', 'suicide', 'help me', 'urgent'],
+  auto_escalation_enabled: true,
+  require_email_before_chat: false,
+  require_name_before_chat: false,
+  proactive_message_enabled: false,
+  proactive_message: null,
+  proactive_message_delay_seconds: 30,
+  greeting: null,
+};
 
 const getOrCreateSessionId = (): string => {
   const key = 'chat_session_id';
@@ -46,6 +78,14 @@ const getPageInfo = () => ({
   url: window.location.href,
   pageTitle: document.title,
 });
+
+const randomInRange = (min: number, max: number): number => {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+const sleep = (ms: number): Promise<void> => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-ai`;
 const TRACK_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-page-analytics`;
@@ -174,8 +214,126 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
   const [isTyping, setIsTyping] = useState(false);
   const [chatOpenTracked, setChatOpenTracked] = useState(false);
   const [humanEscalationTracked, setHumanEscalationTracked] = useState(false);
+  const [settings, setSettings] = useState<PropertySettings>(DEFAULT_SETTINGS);
+  const [isEscalated, setIsEscalated] = useState(false);
+  const [requiresLeadCapture, setRequiresLeadCapture] = useState(false);
+  const [visitorInfo, setVisitorInfo] = useState<{ name?: string; email?: string }>({});
+  const [showProactiveMessage, setShowProactiveMessage] = useState(false);
+  
+  const aiMessageCountRef = useRef(0);
+  const proactiveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch property settings
+  const fetchSettings = useCallback(async () => {
+    if (!propertyId || propertyId === 'demo') return;
+
+    const { data, error } = await supabase
+      .from('properties')
+      .select(`
+        ai_response_delay_min_ms,
+        ai_response_delay_max_ms,
+        typing_indicator_min_ms,
+        typing_indicator_max_ms,
+        max_ai_messages_before_escalation,
+        escalation_keywords,
+        auto_escalation_enabled,
+        require_email_before_chat,
+        require_name_before_chat,
+        proactive_message_enabled,
+        proactive_message,
+        proactive_message_delay_seconds,
+        greeting
+      `)
+      .eq('id', propertyId)
+      .single();
+
+    if (!error && data) {
+      setSettings({
+        ai_response_delay_min_ms: data.ai_response_delay_min_ms ?? DEFAULT_SETTINGS.ai_response_delay_min_ms,
+        ai_response_delay_max_ms: data.ai_response_delay_max_ms ?? DEFAULT_SETTINGS.ai_response_delay_max_ms,
+        typing_indicator_min_ms: data.typing_indicator_min_ms ?? DEFAULT_SETTINGS.typing_indicator_min_ms,
+        typing_indicator_max_ms: data.typing_indicator_max_ms ?? DEFAULT_SETTINGS.typing_indicator_max_ms,
+        max_ai_messages_before_escalation: data.max_ai_messages_before_escalation ?? DEFAULT_SETTINGS.max_ai_messages_before_escalation,
+        escalation_keywords: data.escalation_keywords ?? DEFAULT_SETTINGS.escalation_keywords,
+        auto_escalation_enabled: data.auto_escalation_enabled ?? DEFAULT_SETTINGS.auto_escalation_enabled,
+        require_email_before_chat: data.require_email_before_chat ?? DEFAULT_SETTINGS.require_email_before_chat,
+        require_name_before_chat: data.require_name_before_chat ?? DEFAULT_SETTINGS.require_name_before_chat,
+        proactive_message_enabled: data.proactive_message_enabled ?? DEFAULT_SETTINGS.proactive_message_enabled,
+        proactive_message: data.proactive_message,
+        proactive_message_delay_seconds: data.proactive_message_delay_seconds ?? DEFAULT_SETTINGS.proactive_message_delay_seconds,
+        greeting: data.greeting,
+      });
+
+      // Check if lead capture is required
+      if (data.require_email_before_chat || data.require_name_before_chat) {
+        setRequiresLeadCapture(true);
+      }
+    }
+  }, [propertyId]);
+
+  // Check for escalation keywords in message
+  const checkForEscalationKeywords = useCallback((content: string): boolean => {
+    if (!settings.auto_escalation_enabled) return false;
+    const lowerContent = content.toLowerCase();
+    return settings.escalation_keywords.some(keyword => 
+      lowerContent.includes(keyword.toLowerCase())
+    );
+  }, [settings.auto_escalation_enabled, settings.escalation_keywords]);
+
+  // Trigger escalation
+  const triggerEscalation = useCallback(async () => {
+    if (isEscalated) return;
+    
+    setIsEscalated(true);
+    
+    // Track escalation event
+    if (propertyId && propertyId !== 'demo' && !humanEscalationTracked) {
+      setHumanEscalationTracked(true);
+      trackAnalyticsEvent(propertyId, 'human_escalation');
+    }
+
+    // Update conversation status to active (for human agent)
+    if (conversationId) {
+      await supabase
+        .from('conversations')
+        .update({ status: 'active' })
+        .eq('id', conversationId);
+    }
+
+    // Add escalation message
+    setMessages(prev => [...prev, {
+      id: `escalation-${Date.now()}`,
+      content: "I'm connecting you with a human agent who can better assist you. Please hold on.",
+      sender_type: 'agent',
+      created_at: new Date().toISOString(),
+    }]);
+  }, [isEscalated, propertyId, humanEscalationTracked, conversationId]);
+
+  // Start proactive message timer
+  const startProactiveTimer = useCallback(() => {
+    if (!settings.proactive_message_enabled || !settings.proactive_message) return;
+    
+    if (proactiveTimerRef.current) {
+      clearTimeout(proactiveTimerRef.current);
+    }
+
+    proactiveTimerRef.current = setTimeout(() => {
+      if (messages.length === 0 || (messages.length === 1 && messages[0].id === 'greeting')) {
+        setShowProactiveMessage(true);
+        setMessages(prev => [...prev, {
+          id: 'proactive',
+          content: settings.proactive_message!,
+          sender_type: 'agent',
+          created_at: new Date().toISOString(),
+        }]);
+      }
+    }, settings.proactive_message_delay_seconds * 1000);
+  }, [settings.proactive_message_enabled, settings.proactive_message, settings.proactive_message_delay_seconds, messages]);
 
   const initializeChat = useCallback(async () => {
+    // Fetch settings first
+    await fetchSettings();
+
     if (!propertyId || propertyId === 'demo') {
       // Add greeting message in demo mode
       if (greeting) {
@@ -225,6 +383,12 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
         .from('visitors')
         .update({ current_page: window.location.pathname })
         .eq('id', visitor.id);
+      
+      // If visitor already has name/email, don't require lead capture
+      if (visitor.name || visitor.email) {
+        setRequiresLeadCapture(false);
+        setVisitorInfo({ name: visitor.name || undefined, email: visitor.email || undefined });
+      }
     }
 
     setVisitorId(visitor.id);
@@ -241,6 +405,11 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
     if (conversation) {
       setConversationId(conversation.id);
       
+      // Check if already escalated
+      if (conversation.status === 'active' && conversation.assigned_agent_id) {
+        setIsEscalated(true);
+      }
+      
       // Fetch existing messages
       const { data: existingMessages } = await supabase
         .from('messages')
@@ -248,24 +417,51 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
         .eq('conversation_id', conversation.id)
         .order('created_at', { ascending: true });
 
+      // Count AI messages
+      aiMessageCountRef.current = (existingMessages || []).filter(
+        m => m.sender_type === 'agent' && m.sender_id === 'ai-bot'
+      ).length;
+
       setMessages((existingMessages || []).map(m => ({
         ...m,
         sender_type: m.sender_type as 'agent' | 'visitor',
       })));
-    } else if (greeting) {
+    } else if (settings.greeting || greeting) {
       // Add greeting for new conversations
       setMessages([{
         id: 'greeting',
-        content: greeting,
+        content: settings.greeting || greeting || '',
         sender_type: 'agent',
         created_at: new Date().toISOString(),
       }]);
     }
 
     setLoading(false);
-  }, [propertyId, greeting]);
+  }, [propertyId, greeting, fetchSettings, settings.greeting]);
+
+  // Submit lead info
+  const submitLeadInfo = async (name?: string, email?: string) => {
+    setVisitorInfo({ name, email });
+    setRequiresLeadCapture(false);
+
+    if (visitorId && (name || email)) {
+      await supabase
+        .from('visitors')
+        .update({ 
+          name: name || null, 
+          email: email || null 
+        })
+        .eq('id', visitorId);
+    }
+  };
 
   const sendMessage = async (content: string) => {
+    // Clear proactive timer when user sends a message
+    if (proactiveTimerRef.current) {
+      clearTimeout(proactiveTimerRef.current);
+      proactiveTimerRef.current = null;
+    }
+
     const visitorMessage: Message = {
       id: `msg-${Date.now()}`,
       content,
@@ -281,9 +477,31 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
       trackAnalyticsEvent(propertyId, 'chat_open');
     }
 
+    // Check for escalation keywords
+    if (checkForEscalationKeywords(content)) {
+      await triggerEscalation();
+      return;
+    }
+
+    // If already escalated, don't use AI
+    if (isEscalated) {
+      // Just save the message to DB
+      if (conversationId && visitorId) {
+        await supabase
+          .from('messages')
+          .insert({
+            conversation_id: conversationId,
+            sender_id: visitorId,
+            sender_type: 'visitor',
+            content,
+          });
+      }
+      return;
+    }
+
     // Build conversation history for AI
     const conversationHistory = messages
-      .filter(m => m.id !== 'greeting')
+      .filter(m => m.id !== 'greeting' && m.id !== 'proactive')
       .map(m => ({
         role: m.sender_type === 'visitor' ? 'user' as const : 'assistant' as const,
         content: m.content,
@@ -291,8 +509,21 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
     
     conversationHistory.push({ role: 'user', content });
 
-    // Show typing indicator
+    // Apply typing indicator delay
+    const typingDuration = randomInRange(
+      settings.typing_indicator_min_ms,
+      settings.typing_indicator_max_ms
+    );
+    
     setIsTyping(true);
+    await sleep(typingDuration);
+
+    // Apply response delay
+    const responseDelay = randomInRange(
+      settings.ai_response_delay_min_ms,
+      settings.ai_response_delay_max_ms
+    );
+    await sleep(responseDelay);
 
     // Create placeholder for AI response
     const aiMessageId = `ai-${Date.now()}`;
@@ -317,8 +548,19 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
           }
         });
       },
-      onDone: () => {
+      onDone: async () => {
         setIsTyping(false);
+        
+        // Increment AI message count
+        aiMessageCountRef.current += 1;
+
+        // Check if should auto-escalate based on message count
+        if (
+          settings.auto_escalation_enabled && 
+          aiMessageCountRef.current >= settings.max_ai_messages_before_escalation
+        ) {
+          await triggerEscalation();
+        }
       },
       onError: (error) => {
         setIsTyping(false);
@@ -385,6 +627,16 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
     initializeChat();
   }, [initializeChat]);
 
+  // Start proactive message timer when widget opens
+  useEffect(() => {
+    startProactiveTimer();
+    return () => {
+      if (proactiveTimerRef.current) {
+        clearTimeout(proactiveTimerRef.current);
+      }
+    };
+  }, [startProactiveTimer]);
+
   // Subscribe to realtime messages (for human agent responses)
   useEffect(() => {
     if (!conversationId) return;
@@ -403,6 +655,11 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
           const rawMsg = payload.new as { id: string; content: string; sender_type: string; sender_id: string; created_at: string };
           // Only add agent messages that aren't from AI (human agent override)
           if (rawMsg.sender_type === 'agent' && rawMsg.sender_id !== 'ai-bot') {
+            // Mark as escalated when human agent responds
+            if (!isEscalated) {
+              setIsEscalated(true);
+            }
+
             // Track human escalation event (only once per conversation)
             if (!humanEscalationTracked && propertyId && propertyId !== 'demo') {
               setHumanEscalationTracked(true);
@@ -428,7 +685,7 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, humanEscalationTracked, propertyId]);
+  }, [conversationId, humanEscalationTracked, propertyId, isEscalated]);
 
   return {
     messages,
@@ -437,5 +694,10 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
     isTyping,
     visitorId,
     conversationId,
+    settings,
+    isEscalated,
+    requiresLeadCapture,
+    submitLeadInfo,
+    visitorInfo,
   };
 };
