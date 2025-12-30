@@ -486,41 +486,6 @@ const WidgetPreview = () => {
                   </CardContent>
                 </Card>
 
-                {/* Widget Settings */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Display Settings</CardTitle>
-                    <CardDescription>Configure how your widget appears to visitors</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="agentName">Display Name</Label>
-                      <Input
-                        id="agentName"
-                        value={agentName}
-                        onChange={(e) => setAgentName(e.target.value)}
-                        placeholder="Support Team"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="greeting">Welcome Message</Label>
-                      <Input
-                        id="greeting"
-                        value={greeting}
-                        onChange={(e) => setGreeting(e.target.value)}
-                        placeholder="Hi there! How can I help?"
-                      />
-                    </div>
-                    {extractedFont && (
-                      <div className="p-3 bg-muted/50 rounded-lg">
-                        <p className="text-xs text-muted-foreground">
-                          <Sparkles className="h-3 w-3 inline mr-1" />
-                          Detected font from your website: <span className="font-medium text-foreground">{extractedFont}</span>
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
               </TabsContent>
 
               <TabsContent value="code" className="mt-6">
@@ -571,7 +536,7 @@ const WidgetPreview = () => {
             </Tabs>
           </div>
 
-          {/* Mobile Preview */}
+          {/* Mobile Preview & Display Settings */}
           <div className="space-y-6">
             <Card className="overflow-hidden">
               <CardHeader className="bg-muted/50">
@@ -633,6 +598,42 @@ const WidgetPreview = () => {
                     />
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Display Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Display Settings</CardTitle>
+                <CardDescription>Configure how your widget appears to visitors</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="agentName">Display Name</Label>
+                  <Input
+                    id="agentName"
+                    value={agentName}
+                    onChange={(e) => setAgentName(e.target.value)}
+                    placeholder="Support Team"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="greeting">Welcome Message</Label>
+                  <Input
+                    id="greeting"
+                    value={greeting}
+                    onChange={(e) => setGreeting(e.target.value)}
+                    placeholder="Hi there! How can I help?"
+                  />
+                </div>
+                {extractedFont && (
+                  <div className="p-3 bg-muted/50 rounded-lg">
+                    <p className="text-xs text-muted-foreground">
+                      <Sparkles className="h-3 w-3 inline mr-1" />
+                      Detected font from your website: <span className="font-medium text-foreground">{extractedFont}</span>
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
