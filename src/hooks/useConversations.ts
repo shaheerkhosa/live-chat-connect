@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -55,6 +55,11 @@ export const useConversations = () => {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<DbConversation[]>([]);
   const [properties, setProperties] = useState<DbProperty[]>([]);
+
+  // Avoid channel-name collisions when this hook is mounted in multiple places (e.g. sidebar + widget preview).
+  const realtimeChannelSuffixRef = useRef<string>(
+    `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
 
   // Important: `loading` should represent BOTH properties + conversations.
   // Otherwise route guards may think there are "no properties" while the properties request is still in-flight.
@@ -246,7 +251,7 @@ export const useConversations = () => {
     if (!user) return;
 
     const messagesChannel = supabase
-      .channel('messages-realtime')
+      .channel(`messages-realtime-${realtimeChannelSuffixRef.current}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'messages' },
@@ -257,7 +262,7 @@ export const useConversations = () => {
       .subscribe();
 
     const conversationsChannel = supabase
-      .channel('conversations-realtime')
+      .channel(`conversations-realtime-${realtimeChannelSuffixRef.current}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'conversations' },
