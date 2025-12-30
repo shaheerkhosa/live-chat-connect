@@ -275,9 +275,22 @@ export const useConversations = () => {
       )
       .subscribe();
 
+    // Subscribe to visitor updates (for AI-extracted info)
+    const visitorsChannel = supabase
+      .channel(`visitors-realtime-${realtimeChannelSuffixRef.current}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'visitors' },
+        () => {
+          fetchConversations();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(conversationsChannel);
+      supabase.removeChannel(visitorsChannel);
     };
   }, [user, fetchConversations]);
 
