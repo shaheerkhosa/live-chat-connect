@@ -21,6 +21,9 @@ export interface DbVisitor {
   session_id: string;
   name: string | null;
   email: string | null;
+  phone: string | null;
+  age: string | null;
+  occupation: string | null;
   browser_info: string | null;
   location: string | null;
   current_page: string | null;

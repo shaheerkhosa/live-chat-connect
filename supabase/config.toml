@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.send-agent-invitation]
 verify_jwt = false
+
+[functions.extract-visitor-info]
+verify_jwt = false

@@ -348,6 +348,7 @@ export type Database = {
       }
       visitors: {
         Row: {
+          age: string | null
           browser_info: string | null
           created_at: string
           current_page: string | null
@@ -355,10 +356,13 @@ export type Database = {
           id: string
           location: string | null
           name: string | null
+          occupation: string | null
+          phone: string | null
           property_id: string
           session_id: string
         }
         Insert: {
+          age?: string | null
           browser_info?: string | null
           created_at?: string
           current_page?: string | null
@@ -366,10 +370,13 @@ export type Database = {
           id?: string
           location?: string | null
           name?: string | null
+          occupation?: string | null
+          phone?: string | null
           property_id: string
           session_id: string
         }
         Update: {
+          age?: string | null
           browser_info?: string | null
           created_at?: string
           current_page?: string | null
@@ -377,6 +384,8 @@ export type Database = {
           id?: string
           location?: string | null
           name?: string | null
+          occupation?: string | null
+          phone?: string | null
           property_id?: string
           session_id?: string
         }
