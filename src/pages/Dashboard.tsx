@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 type FilterStatus = 'all' | 'active' | 'pending' | 'closed';
 
 // Convert DB conversation to UI conversation format
-const toUiConversation = (dbConv: DbConversation): Conversation => ({
+const toUiConversation = (dbConv: DbConversation): Conversation & { isTest?: boolean } => ({
   id: dbConv.id,
   propertyId: dbConv.property_id,
   visitorId: dbConv.visitor_id,
@@ -51,6 +51,7 @@ const toUiConversation = (dbConv: DbConversation): Conversation => ({
   unreadCount: (dbConv.messages || []).filter(m => !m.read && m.sender_type === 'visitor').length,
   createdAt: new Date(dbConv.created_at),
   updatedAt: new Date(dbConv.updated_at),
+  isTest: dbConv.is_test || false,
 });
 
 const Dashboard = () => {

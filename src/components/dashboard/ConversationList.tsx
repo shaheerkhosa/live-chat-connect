@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { Conversation } from '@/types/chat';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Globe, Clock, User } from 'lucide-react';
+import { Globe, Clock, User, FlaskConical } from 'lucide-react';
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -12,14 +12,15 @@ interface ConversationListProps {
 }
 
 interface ConversationItemProps {
-  conversation: Conversation;
+  conversation: Conversation & { isTest?: boolean };
   isSelected: boolean;
   onClick: () => void;
 }
 
 const ConversationItem = ({ conversation, isSelected, onClick }: ConversationItemProps) => {
   const { visitor, lastMessage, unreadCount, status } = conversation;
-  const visitorName = visitor.name || `Visitor ${visitor.sessionId.slice(-4)}`;
+  const isTest = (conversation as any).isTest;
+  const visitorName = isTest ? 'Test Visitor' : (visitor.name || `Visitor ${visitor.sessionId.slice(-4)}`);
   const initials = visitorName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
@@ -37,11 +38,12 @@ const ConversationItem = ({ conversation, isSelected, onClick }: ConversationIte
           <Avatar className="h-10 w-10">
             <AvatarFallback className={cn(
               "text-sm font-medium",
+              isTest ? "bg-amber-500/10 text-amber-600" :
               status === 'active' ? "bg-primary/10 text-primary" :
               status === 'pending' ? "bg-status-away/10 text-status-away" :
               "bg-muted text-muted-foreground"
             )}>
-              {initials}
+              {isTest ? <FlaskConical className="h-4 w-4" /> : initials}
             </AvatarFallback>
           </Avatar>
           {status === 'active' && (
@@ -51,12 +53,20 @@ const ConversationItem = ({ conversation, isSelected, onClick }: ConversationIte
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-1">
-            <h4 className={cn(
-              "text-sm truncate",
-              unreadCount > 0 ? "font-semibold text-foreground" : "font-medium text-foreground/90"
-            )}>
-              {visitorName}
-            </h4>
+            <div className="flex items-center gap-2 min-w-0">
+              <h4 className={cn(
+                "text-sm truncate",
+                unreadCount > 0 ? "font-semibold text-foreground" : "font-medium text-foreground/90"
+              )}>
+                {visitorName}
+              </h4>
+              {isTest && (
+                <Badge variant="outline" className="text-amber-600 border-amber-500/30 bg-amber-500/10 text-xs py-0 flex-shrink-0">
+                  <FlaskConical className="h-3 w-3 mr-1" />
+                  Test
+                </Badge>
+              )}
+            </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               {unreadCount > 0 && (
                 <Badge variant="default" className="bg-primary text-primary-foreground h-5 min-w-[20px] flex items-center justify-center">

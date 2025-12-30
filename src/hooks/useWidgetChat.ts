@@ -293,8 +293,70 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
       trackAnalyticsEvent(propertyId, 'human_escalation');
     }
 
-    // Update conversation status to active (for human agent)
-    if (conversationId) {
+    // For preview mode, create a real test conversation in the database
+    if (isPreview && propertyId && propertyId !== 'demo') {
+      try {
+        // Create a test visitor
+        const testSessionId = `test-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        const { data: testVisitor, error: visitorError } = await supabase
+          .from('visitors')
+          .insert({
+            property_id: propertyId,
+            session_id: testSessionId,
+            browser_info: 'Test Widget Preview',
+            current_page: '/widget-preview',
+            name: 'Test Visitor',
+          })
+          .select()
+          .single();
+
+        if (visitorError || !testVisitor) {
+          console.error('Error creating test visitor:', visitorError);
+        } else {
+          // Create a test conversation marked with is_test = true
+          const { data: testConversation, error: convError } = await supabase
+            .from('conversations')
+            .insert({
+              property_id: propertyId,
+              visitor_id: testVisitor.id,
+              status: 'active',
+              is_test: true,
+            })
+            .select()
+            .single();
+
+          if (convError || !testConversation) {
+            console.error('Error creating test conversation:', convError);
+          } else {
+            // Save the conversation messages
+            const messagesToSave = messages.map((m, idx) => ({
+              conversation_id: testConversation.id,
+              sender_id: m.sender_type === 'visitor' ? testVisitor.id : 'ai-bot',
+              sender_type: m.sender_type,
+              content: m.content,
+            }));
+
+            // Add escalation message
+            messagesToSave.push({
+              conversation_id: testConversation.id,
+              sender_id: 'ai-bot',
+              sender_type: 'agent',
+              content: "I'm connecting you with a human agent who can better assist you. Please hold on.",
+            });
+
+            if (messagesToSave.length > 0) {
+              await supabase.from('messages').insert(messagesToSave);
+            }
+
+            setConversationId(testConversation.id);
+            setVisitorId(testVisitor.id);
+          }
+        }
+      } catch (error) {
+        console.error('Error creating test conversation:', error);
+      }
+    } else if (conversationId) {
+      // Update existing conversation status to active (for human agent)
       await supabase
         .from('conversations')
         .update({ status: 'active' })
@@ -308,7 +370,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
       sender_type: 'agent',
       created_at: new Date().toISOString(),
     }]);
-  }, [isEscalated, propertyId, humanEscalationTracked, conversationId]);
+  }, [isEscalated, propertyId, humanEscalationTracked, conversationId, isPreview, messages]);
 
   // Start proactive message timer
   const startProactiveTimer = useCallback(() => {
