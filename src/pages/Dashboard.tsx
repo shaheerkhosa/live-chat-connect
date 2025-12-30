@@ -65,12 +65,22 @@ const Dashboard = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Redirect to onboarding if no properties
+  // Redirect to onboarding if no properties - only after data has loaded
+  // We need to ensure properties have been fetched (dataLoading was true then became false)
+  const [propertiesChecked, setPropertiesChecked] = useState(false);
+  
   useEffect(() => {
-    if (!authLoading && !dataLoading && user && properties.length === 0) {
+    // Only mark as checked once data loading completes
+    if (!dataLoading && user) {
+      setPropertiesChecked(true);
+    }
+  }, [dataLoading, user]);
+  
+  useEffect(() => {
+    if (propertiesChecked && properties.length === 0) {
       navigate('/onboarding');
     }
-  }, [authLoading, dataLoading, user, properties.length, navigate]);
+  }, [propertiesChecked, properties.length, navigate]);
 
   const statusFilter = (searchParams.get('status') as FilterStatus) || 'all';
   
