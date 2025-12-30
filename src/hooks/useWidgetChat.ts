@@ -90,7 +90,30 @@ const sleep = (ms: number): Promise<void> => {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-ai`;
 const TRACK_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-page-analytics`;
+const EXTRACT_INFO_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-visitor-info`;
 
+const extractVisitorInfo = async (
+  visitorId: string,
+  conversationHistory: { role: string; content: string }[]
+) => {
+  if (!visitorId || conversationHistory.length < 2) return;
+  
+  try {
+    await fetch(EXTRACT_INFO_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({
+        visitorId,
+        conversationHistory,
+      }),
+    });
+  } catch (error) {
+    console.error('Failed to extract visitor info:', error);
+  }
+};
 const trackAnalyticsEvent = async (
   propertyId: string,
   eventType: 'chat_open' | 'human_escalation'
@@ -328,8 +351,9 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
           if (convError || !testConversation) {
             console.error('Error creating test conversation:', convError);
           } else {
-            // Save the conversation messages
-            const messagesToSave = messages.map((m, idx) => ({
+            // Include all messages including the greeting
+            const allMessages = messages.filter(m => m.content.trim() !== '');
+            const messagesToSave = allMessages.map((m) => ({
               conversation_id: testConversation.id,
               sender_id: m.sender_type === 'visitor' ? testVisitor.id : 'ai-bot',
               sender_type: m.sender_type,
@@ -361,6 +385,27 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         .from('conversations')
         .update({ status: 'active' })
         .eq('id', conversationId);
+
+      // Save the greeting if it exists and hasn't been saved yet
+      const greetingMsg = messages.find(m => m.id === 'greeting');
+      if (greetingMsg && visitorId) {
+        // Check if greeting is already in DB
+        const { data: existingMsgs } = await supabase
+          .from('messages')
+          .select('id')
+          .eq('conversation_id', conversationId)
+          .limit(1);
+        
+        // If no messages yet, add the greeting first
+        if (!existingMsgs || existingMsgs.length === 0) {
+          await supabase.from('messages').insert({
+            conversation_id: conversationId,
+            sender_id: 'ai-bot',
+            sender_type: 'agent',
+            content: greetingMsg.content,
+          });
+        }
+      }
     }
 
     // Add escalation message
@@ -370,7 +415,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
       sender_type: 'agent',
       created_at: new Date().toISOString(),
     }]);
-  }, [isEscalated, propertyId, humanEscalationTracked, conversationId, isPreview, messages]);
+  }, [isEscalated, propertyId, humanEscalationTracked, conversationId, isPreview, messages, visitorId]);
 
   // Start proactive message timer
   const startProactiveTimer = useCallback(() => {
@@ -681,6 +726,12 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
               sender_type: 'agent',
               content: aiContent,
             });
+        }
+        
+        // Extract visitor info in background (non-blocking)
+        // Only do this every few messages to avoid excessive API calls
+        if (conversationHistory.length >= 2 && conversationHistory.length % 2 === 0) {
+          extractVisitorInfo(visitorId, conversationHistory);
         }
       }
     }

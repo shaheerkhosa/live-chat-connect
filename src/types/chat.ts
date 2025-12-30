@@ -32,6 +32,9 @@ export interface Visitor {
   sessionId: string;
   name?: string;
   email?: string;
+  phone?: string;
+  age?: string;
+  occupation?: string;
   propertyId: string;
   browserInfo?: string;
   location?: string;

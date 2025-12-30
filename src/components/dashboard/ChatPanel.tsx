@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
-import { Send, MoreVertical, User, Globe, Monitor, MapPin, Archive, UserPlus, Video } from 'lucide-react';
+import { Send, MoreVertical, User, Globe, Monitor, MapPin, Archive, UserPlus, Video, Phone, Briefcase, Calendar, Mail, ChevronRight, ChevronLeft, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Conversation, Message } from '@/types/chat';
 import { Button } from '@/components/ui/button';
@@ -14,11 +14,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { mockAgents } from '@/data/mockData';
 import { useVideoChat } from '@/hooks/useVideoChat';
 import { VideoCallModal } from '@/components/video/VideoCallModal';
 import { useToast } from '@/hooks/use-toast';
-
 interface ChatPanelProps {
   conversation: Conversation | null;
   onSendMessage: (content: string) => void;
@@ -75,6 +76,96 @@ const EmptyState = () => (
     </p>
   </div>
 );
+
+// Compact visitor info item
+const InfoItem = ({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) => (
+  <div className="flex items-center gap-2 py-1.5">
+    <Icon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+    <span className="text-xs text-muted-foreground min-w-[50px]">{label}:</span>
+    <span className="text-xs text-foreground truncate">{value}</span>
+  </div>
+);
+
+// Collapsible visitor info sidebar
+const VisitorInfoSidebar = ({ visitor, assignedAgent }: { visitor: any; assignedAgent: any }) => {
+  const [isOpen, setIsOpen] = useState(true);
+
+  return (
+    <div className={cn(
+      "border-l border-border bg-card/80 backdrop-blur-sm hidden lg:flex flex-col transition-all duration-200",
+      isOpen ? "w-64" : "w-10"
+    )}>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="flex flex-col h-full">
+        {/* Toggle button */}
+        <CollapsibleTrigger asChild>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={cn(
+              "h-8 w-full justify-center border-b border-border rounded-none",
+              isOpen && "justify-end px-2"
+            )}
+          >
+            {isOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent className="flex-1 overflow-y-auto">
+          <div className="p-3 border-b border-border">
+            <h4 className="font-medium text-sm text-foreground">Visitor Details</h4>
+            <p className="text-xs text-muted-foreground">
+              {formatDistanceToNow(new Date(visitor.createdAt), { addSuffix: true })}
+            </p>
+          </div>
+
+          <div className="p-3 space-y-1">
+            {visitor.name && (
+              <InfoItem icon={User} label="Name" value={visitor.name} />
+            )}
+            {visitor.email && (
+              <InfoItem icon={Mail} label="Email" value={visitor.email} />
+            )}
+            {visitor.phone && (
+              <InfoItem icon={Phone} label="Phone" value={visitor.phone} />
+            )}
+            {visitor.age && (
+              <InfoItem icon={Calendar} label="Age" value={visitor.age} />
+            )}
+            {visitor.occupation && (
+              <InfoItem icon={Briefcase} label="Work" value={visitor.occupation} />
+            )}
+            {visitor.location && (
+              <InfoItem icon={MapPin} label="Location" value={visitor.location} />
+            )}
+            {visitor.currentPage && (
+              <InfoItem icon={Globe} label="Page" value={visitor.currentPage} />
+            )}
+            {visitor.browserInfo && (
+              <InfoItem icon={Monitor} label="Browser" value={visitor.browserInfo} />
+            )}
+          </div>
+
+          {assignedAgent && (
+            <div className="p-3 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-2">Assigned Agent</p>
+              <div className="flex items-center gap-2">
+                <Avatar className="h-6 w-6">
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                    {assignedAgent.name.split(' ').map((n: string) => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-xs font-medium text-foreground">{assignedAgent.name}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{assignedAgent.status}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
+  );
+};
 
 export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: ChatPanelProps) => {
   const [message, setMessage] = useState('');
@@ -250,86 +341,8 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
         </div>
       </div>
 
-      {/* Visitor Info Sidebar */}
-      <div className="w-72 border-l border-border bg-card/80 backdrop-blur-sm overflow-y-auto hidden lg:block">
-        <div className="p-4 border-b border-border bg-gradient-card">
-          <h4 className="font-semibold text-foreground mb-1">Visitor Details</h4>
-          <p className="text-xs text-muted-foreground">
-            Session started {formatDistanceToNow(new Date(visitor.createdAt), { addSuffix: true })}
-          </p>
-        </div>
-
-        <div className="p-4 space-y-4">
-          <div className="space-y-3">
-            {visitor.name && (
-              <div className="flex items-start gap-3">
-                <User className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Name</p>
-                  <p className="text-sm text-foreground">{visitor.name}</p>
-                </div>
-              </div>
-            )}
-
-            {visitor.email && (
-              <div className="flex items-start gap-3">
-                <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Email</p>
-                  <p className="text-sm text-foreground">{visitor.email}</p>
-                </div>
-              </div>
-            )}
-
-            {visitor.location && (
-              <div className="flex items-start gap-3">
-                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Location</p>
-                  <p className="text-sm text-foreground">{visitor.location}</p>
-                </div>
-              </div>
-            )}
-
-            {visitor.currentPage && (
-              <div className="flex items-start gap-3">
-                <Globe className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Current Page</p>
-                  <p className="text-sm text-foreground truncate">{visitor.currentPage}</p>
-                </div>
-              </div>
-            )}
-
-            {visitor.browserInfo && (
-              <div className="flex items-start gap-3">
-                <Monitor className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Browser</p>
-                  <p className="text-sm text-foreground">{visitor.browserInfo}</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {assignedAgent && (
-            <div className="pt-4 border-t border-border">
-              <p className="text-xs text-muted-foreground mb-2">Assigned Agent</p>
-              <div className="flex items-center gap-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                    {assignedAgent.name.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium text-foreground">{assignedAgent.name}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{assignedAgent.status}</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Visitor Info Sidebar - Collapsible on large screens */}
+      <VisitorInfoSidebar visitor={visitor} assignedAgent={assignedAgent} />
 
       {/* Video Call Modal */}
       <VideoCallModal
@@ -350,5 +363,3 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
     </div>
   );
 };
-
-import { MessageSquare, Mail } from 'lucide-react';
