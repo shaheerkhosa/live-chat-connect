@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Globe, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import scaledBotLogo from '@/assets/scaled-bot-logo.png';
 const Onboarding = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { createProperty } = useConversations();
+  const { createProperty, properties, loading: dataLoading } = useConversations();
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [propertyName, setPropertyName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -43,7 +43,14 @@ const Onboarding = () => {
     }
   };
 
-  if (authLoading) {
+  useEffect(() => {
+    // If the user already has websites, onboarding should never block them.
+    if (!authLoading && user && !dataLoading && properties.length > 0) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [authLoading, user, dataLoading, properties.length, navigate]);
+
+  if (authLoading || dataLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -128,6 +135,16 @@ const Onboarding = () => {
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </>
                 )}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-11"
+                disabled={isCreating}
+                onClick={() => navigate('/dashboard')}
+              >
+                Skip for now
               </Button>
             </form>
           </CardContent>

@@ -54,11 +54,16 @@ export const useConversations = () => {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<DbConversation[]>([]);
   const [properties, setProperties] = useState<DbProperty[]>([]);
+
+  // Important: `loading` should represent BOTH properties + conversations.
+  // Otherwise route guards may think there are "no properties" while the properties request is still in-flight.
   const [loading, setLoading] = useState(true);
+  const [propertiesLoaded, setPropertiesLoaded] = useState(false);
+  const [conversationsLoaded, setConversationsLoaded] = useState(false);
 
   const fetchProperties = useCallback(async () => {
     if (!user) return;
-    
+
     const { data, error } = await supabase
       .from('properties')
       .select('*')
@@ -66,10 +71,13 @@ export const useConversations = () => {
 
     if (error) {
       console.error('Error fetching properties:', error);
+      setProperties([]);
+      setPropertiesLoaded(true);
       return;
     }
 
     setProperties(data || []);
+    setPropertiesLoaded(true);
   }, [user]);
 
   const fetchConversations = useCallback(async () => {
@@ -86,7 +94,8 @@ export const useConversations = () => {
 
     if (convError) {
       console.error('Error fetching conversations:', convError);
-      setLoading(false);
+      setConversations([]);
+      setConversationsLoaded(true);
       return;
     }
 
@@ -102,7 +111,7 @@ export const useConversations = () => {
         return {
           ...conv,
           status: conv.status as 'active' | 'closed' | 'pending',
-          messages: (messages || []).map(m => ({
+          messages: (messages || []).map((m) => ({
             ...m,
             sender_type: m.sender_type as 'agent' | 'visitor',
           })),
@@ -111,7 +120,7 @@ export const useConversations = () => {
     );
 
     setConversations(conversationsWithMessages as DbConversation[]);
-    setLoading(false);
+    setConversationsLoaded(true);
   }, [user]);
 
   const sendMessage = async (conversationId: string, content: string, senderId: string) => {
@@ -207,11 +216,29 @@ export const useConversations = () => {
   };
 
   useEffect(() => {
-    if (user) {
-      fetchProperties();
-      fetchConversations();
+    if (!user) {
+      setConversations([]);
+      setProperties([]);
+      setLoading(false);
+      setPropertiesLoaded(false);
+      setConversationsLoaded(false);
+      return;
     }
+
+    // New session / mount: reset to a known loading state.
+    setLoading(true);
+    setPropertiesLoaded(false);
+    setConversationsLoaded(false);
+
+    fetchProperties();
+    fetchConversations();
   }, [user, fetchProperties, fetchConversations]);
+
+  useEffect(() => {
+    if (propertiesLoaded && conversationsLoaded) {
+      setLoading(false);
+    }
+  }, [propertiesLoaded, conversationsLoaded]);
 
   // Subscribe to realtime updates
   useEffect(() => {
