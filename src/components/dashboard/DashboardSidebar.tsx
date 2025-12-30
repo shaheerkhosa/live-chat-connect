@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   MessageSquare,
@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuth } from '@/hooks/useAuth';
+import { useConversations } from '@/hooks/useConversations';
 import scaledBotLogo from '@/assets/scaled-bot-logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -83,9 +84,38 @@ export const DashboardSidebar = () => {
   const navigate = useNavigate();
   const { profile } = useUserProfile();
   const { signOut, user, isClient, isAgent, isAdmin } = useAuth();
+  const { conversations } = useConversations();
   
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User';
   const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
+  // Calculate real badge counts from conversations
+  const badgeCounts = useMemo(() => {
+    const allUnread = conversations.reduce((sum, c) => {
+      const unread = (c.messages || []).filter(m => !m.read && m.sender_type === 'visitor').length;
+      return sum + unread;
+    }, 0);
+    
+    const activeUnread = conversations
+      .filter(c => c.status === 'active')
+      .reduce((sum, c) => {
+        const unread = (c.messages || []).filter(m => !m.read && m.sender_type === 'visitor').length;
+        return sum + unread;
+      }, 0);
+    
+    const pendingUnread = conversations
+      .filter(c => c.status === 'pending')
+      .reduce((sum, c) => {
+        const unread = (c.messages || []).filter(m => !m.read && m.sender_type === 'visitor').length;
+        return sum + unread;
+      }, 0);
+
+    return {
+      all: allUnread,
+      active: activeUnread,
+      pending: pendingUnread,
+    };
+  }, [conversations]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -125,9 +155,9 @@ export const DashboardSidebar = () => {
         {/* Inbox - Available to clients and admins */}
         {(isClient || isAdmin) && (
           <SidebarSection title="Inbox" collapsed={collapsed}>
-            <SidebarItem to="/dashboard" icon={Inbox} label="All Conversations" badge={3} collapsed={collapsed} />
-            <SidebarItem to="/dashboard/active" icon={MessageSquare} label="Active" badge={2} collapsed={collapsed} />
-            <SidebarItem to="/dashboard/pending" icon={Clock} label="Pending" badge={1} collapsed={collapsed} />
+            <SidebarItem to="/dashboard" icon={Inbox} label="All Conversations" badge={badgeCounts.all > 0 ? badgeCounts.all : undefined} collapsed={collapsed} />
+            <SidebarItem to="/dashboard/active" icon={MessageSquare} label="Active" badge={badgeCounts.active > 0 ? badgeCounts.active : undefined} collapsed={collapsed} />
+            <SidebarItem to="/dashboard/pending" icon={Clock} label="Pending" badge={badgeCounts.pending > 0 ? badgeCounts.pending : undefined} collapsed={collapsed} />
             <SidebarItem to="/dashboard/closed" icon={Archive} label="Closed" collapsed={collapsed} />
           </SidebarSection>
         )}

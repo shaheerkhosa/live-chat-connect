@@ -27,6 +27,7 @@ interface PropertySettings {
 interface WidgetChatConfig {
   propertyId: string;
   greeting?: string;
+  isPreview?: boolean;
 }
 
 const DEFAULT_SETTINGS: PropertySettings = {
@@ -206,7 +207,7 @@ async function streamAIResponse({
   }
 }
 
-export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
+export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: WidgetChatConfig) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [visitorId, setVisitorId] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -334,12 +335,12 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
     // Fetch settings first
     await fetchSettings();
 
-    if (!propertyId || propertyId === 'demo') {
-      // Add greeting message in demo mode
-      if (greeting) {
+    if (!propertyId || propertyId === 'demo' || isPreview) {
+      // In preview/demo mode, just add the greeting and use AI without database
+      if (greeting || settings.greeting) {
         setMessages([{
           id: 'greeting',
-          content: greeting,
+          content: greeting || settings.greeting || '',
           sender_type: 'agent',
           created_at: new Date().toISOString(),
         }]);
@@ -437,7 +438,7 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
     }
 
     setLoading(false);
-  }, [propertyId, greeting, fetchSettings, settings.greeting]);
+  }, [propertyId, greeting, fetchSettings, settings.greeting, isPreview]);
 
   // Submit lead info
   const submitLeadInfo = async (name?: string, email?: string) => {
@@ -575,8 +576,8 @@ export const useWidgetChat = ({ propertyId, greeting }: WidgetChatConfig) => {
       },
     });
 
-    // If connected to a real property, also save to database
-    if (propertyId && propertyId !== 'demo' && visitorId) {
+    // If connected to a real property (not preview mode), also save to database
+    if (propertyId && propertyId !== 'demo' && !isPreview && visitorId) {
       let currentConversationId = conversationId;
 
       // Create conversation if doesn't exist

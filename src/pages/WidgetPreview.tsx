@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Copy, Check, ArrowLeft, Code, Palette, Loader2, Building2, Sparkles } from 'lucide-react';
+import { Copy, Check, Code, Palette, Loader2, Building2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { ChatWidget } from '@/components/widget/ChatWidget';
+import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -195,43 +196,42 @@ const WidgetPreview = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-secondary/30 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex h-screen bg-gradient-subtle">
+        <DashboardSidebar />
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
       </div>
     );
   }
 
   if (properties.length === 0) {
     return (
-      <div className="min-h-screen bg-secondary/30">
-        <header className="bg-card border-b border-border">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link to="/dashboard">
-                  <Button variant="ghost" size="icon">
-                    <ArrowLeft className="h-5 w-5" />
-                  </Button>
-                </Link>
+      <div className="flex h-screen bg-gradient-subtle">
+        <DashboardSidebar />
+        <div className="flex-1 flex flex-col">
+          <header className="bg-card border-b border-border">
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-xl font-bold text-foreground">Widget Customization</h1>
                   <p className="text-sm text-muted-foreground">Customize and embed your chat widget</p>
                 </div>
+                <ThemeToggle />
               </div>
-              <ThemeToggle />
             </div>
-          </div>
-        </header>
-        <div className="flex items-center justify-center py-20">
-          <div className="text-center">
-            <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-lg font-semibold text-foreground mb-2">No Properties Yet</h2>
-            <p className="text-muted-foreground mb-4">
-              Create a property first to customize your widget.
-            </p>
-            <Link to="/dashboard">
-              <Button>Go to Dashboard</Button>
-            </Link>
+          </header>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h2 className="text-lg font-semibold text-foreground mb-2">No Properties Yet</h2>
+              <p className="text-muted-foreground mb-4">
+                Create a property first to customize your widget.
+              </p>
+              <Link to="/dashboard">
+                <Button>Go to Dashboard</Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -239,37 +239,32 @@ const WidgetPreview = () => {
   }
 
   return (
-    <div className="min-h-screen bg-secondary/30">
-      {/* Header */}
-      <header className="bg-card border-b border-border">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link to="/dashboard">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
+    <div className="flex h-screen bg-gradient-subtle">
+      <DashboardSidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="bg-card border-b border-border shrink-0">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-xl font-bold text-foreground">Widget Customization</h1>
                 <p className="text-sm text-muted-foreground">Customize and embed your chat widget</p>
               </div>
-            </div>
-            <div className="flex items-center gap-4">
-              {/* Property Selector */}
-              <PropertySelector
-                properties={properties}
-                selectedPropertyId={selectedPropertyId}
-                onPropertyChange={handlePropertyChange}
-                onDeleteProperty={deleteProperty}
-              />
-              <ThemeToggle />
+              <div className="flex items-center gap-4">
+                {/* Property Selector */}
+                <PropertySelector
+                  properties={properties}
+                  selectedPropertyId={selectedPropertyId}
+                  onPropertyChange={handlePropertyChange}
+                  onDeleteProperty={deleteProperty}
+                />
+                <ThemeToggle />
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="container mx-auto px-4 py-8">
+        <main className="flex-1 overflow-auto p-6">
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Settings */}
           <div className="space-y-6">
@@ -725,6 +720,7 @@ const WidgetPreview = () => {
           </Card>
         </div>
       </main>
+      </div>
     </div>
   );
 };

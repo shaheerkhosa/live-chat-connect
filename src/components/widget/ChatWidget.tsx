@@ -47,7 +47,7 @@ export const ChatWidget = ({
     requiresLeadCapture, 
     submitLeadInfo,
     visitorInfo 
-  } = useWidgetChat({ propertyId, greeting });
+  } = useWidgetChat({ propertyId, greeting, isPreview });
 
   const videoChat = useVideoChat({
     onCallAccepted: () => {
