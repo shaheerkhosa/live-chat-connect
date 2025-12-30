@@ -89,31 +89,16 @@ export const DashboardSidebar = () => {
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User';
   const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-  // Calculate real badge counts from conversations
+  // Calculate badge counts as number of conversations (not messages)
   const badgeCounts = useMemo(() => {
-    const allUnread = conversations.reduce((sum, c) => {
-      const unread = (c.messages || []).filter(m => !m.read && m.sender_type === 'visitor').length;
-      return sum + unread;
-    }, 0);
-    
-    const activeUnread = conversations
-      .filter(c => c.status === 'active')
-      .reduce((sum, c) => {
-        const unread = (c.messages || []).filter(m => !m.read && m.sender_type === 'visitor').length;
-        return sum + unread;
-      }, 0);
-    
-    const pendingUnread = conversations
-      .filter(c => c.status === 'pending')
-      .reduce((sum, c) => {
-        const unread = (c.messages || []).filter(m => !m.read && m.sender_type === 'visitor').length;
-        return sum + unread;
-      }, 0);
+    const allCount = conversations.length;
+    const activeCount = conversations.filter(c => c.status === 'active').length;
+    const pendingCount = conversations.filter(c => c.status === 'pending').length;
 
     return {
-      all: allUnread,
-      active: activeUnread,
-      pending: pendingUnread,
+      all: allCount,
+      active: activeCount,
+      pending: pendingCount,
     };
   }, [conversations]);
 
