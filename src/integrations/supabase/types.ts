@@ -64,6 +64,7 @@ export type Database = {
           assigned_agent_id: string | null
           created_at: string
           id: string
+          is_test: boolean
           property_id: string
           status: string
           updated_at: string
@@ -73,6 +74,7 @@ export type Database = {
           assigned_agent_id?: string | null
           created_at?: string
           id?: string
+          is_test?: boolean
           property_id: string
           status?: string
           updated_at?: string
@@ -82,6 +84,7 @@ export type Database = {
           assigned_agent_id?: string | null
           created_at?: string
           id?: string
+          is_test?: boolean
           property_id?: string
           status?: string
           updated_at?: string

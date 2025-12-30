@@ -43,6 +43,7 @@ export interface DbConversation {
   visitor_id: string;
   assigned_agent_id: string | null;
   status: 'active' | 'closed' | 'pending';
+  is_test: boolean;
   created_at: string;
   updated_at: string;
   visitor?: DbVisitor;
