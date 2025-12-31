@@ -30,8 +30,10 @@ import {
   Plus,
   Save,
   Loader2,
-  Trash2
+  Trash2,
+  Cloud
 } from 'lucide-react';
+import { SalesforceSettings } from '@/components/settings/SalesforceSettings';
 import {
   Dialog,
   DialogContent,
@@ -300,7 +302,7 @@ const Settings = () => {
 
           {settings && (
             <Tabs defaultValue="behavior" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="behavior">
                   <Clock className="mr-2 h-4 w-4" />
                   Response Timing
@@ -312,6 +314,10 @@ const Settings = () => {
                 <TabsTrigger value="engagement">
                   <MessageSquare className="mr-2 h-4 w-4" />
                   Engagement
+                </TabsTrigger>
+                <TabsTrigger value="salesforce">
+                  <Cloud className="mr-2 h-4 w-4" />
+                  Salesforce
                 </TabsTrigger>
               </TabsList>
 
@@ -593,6 +599,11 @@ const Settings = () => {
                     )}
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              {/* Salesforce Tab */}
+              <TabsContent value="salesforce">
+                <SalesforceSettings propertyId={selectedPropertyId} />
               </TabsContent>
 
             </Tabs>
