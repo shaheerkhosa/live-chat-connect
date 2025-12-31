@@ -325,6 +325,94 @@ export type Database = {
           },
         ]
       }
+      salesforce_exports: {
+        Row: {
+          conversation_id: string
+          export_type: string
+          exported_at: string
+          exported_by: string | null
+          id: string
+          salesforce_lead_id: string
+        }
+        Insert: {
+          conversation_id: string
+          export_type?: string
+          exported_at?: string
+          exported_by?: string | null
+          id?: string
+          salesforce_lead_id: string
+        }
+        Update: {
+          conversation_id?: string
+          export_type?: string
+          exported_at?: string
+          exported_by?: string | null
+          id?: string
+          salesforce_lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salesforce_exports_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salesforce_settings: {
+        Row: {
+          access_token: string | null
+          auto_export_on_conversation_end: boolean
+          auto_export_on_escalation: boolean
+          created_at: string
+          enabled: boolean
+          field_mappings: Json
+          id: string
+          instance_url: string | null
+          property_id: string
+          refresh_token: string | null
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          auto_export_on_conversation_end?: boolean
+          auto_export_on_escalation?: boolean
+          created_at?: string
+          enabled?: boolean
+          field_mappings?: Json
+          id?: string
+          instance_url?: string | null
+          property_id: string
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          auto_export_on_conversation_end?: boolean
+          auto_export_on_escalation?: boolean
+          created_at?: string
+          enabled?: boolean
+          field_mappings?: Json
+          id?: string
+          instance_url?: string | null
+          property_id?: string
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salesforce_settings_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: true
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
