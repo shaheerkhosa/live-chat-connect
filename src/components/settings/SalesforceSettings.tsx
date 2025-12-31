@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Link2, Unlink, Save, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Link2, Unlink, Save, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
 
 interface SalesforceSettingsProps {
   propertyId: string;
@@ -32,6 +32,8 @@ interface SalesforceConfig {
   auto_export_on_escalation: boolean;
   auto_export_on_conversation_end: boolean;
   field_mappings: Record<string, string>;
+  client_id: string;
+  client_secret: string;
 }
 
 const SALESFORCE_LEAD_FIELDS = [
@@ -69,6 +71,7 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fieldMappings, setFieldMappings] = useState<FieldMapping[]>([]);
+  const [showClientSecret, setShowClientSecret] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -97,6 +100,8 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
         auto_export_on_escalation: data.auto_export_on_escalation,
         auto_export_on_conversation_end: data.auto_export_on_conversation_end,
         field_mappings: data.field_mappings as Record<string, string>,
+        client_id: (data as any).client_id || '',
+        client_secret: (data as any).client_secret || '',
       });
       
       // Convert field_mappings object to array
@@ -137,6 +142,8 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
       auto_export_on_escalation: config?.auto_export_on_escalation ?? false,
       auto_export_on_conversation_end: config?.auto_export_on_conversation_end ?? false,
       field_mappings: mappingsObject,
+      client_id: config?.client_id || null,
+      client_secret: config?.client_secret || null,
     };
 
     let result;
@@ -166,6 +173,8 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
         ...settingsData,
         id: result.data.id,
         instance_url: null,
+        client_id: config?.client_id || '',
+        client_secret: config?.client_secret || '',
       });
     }
 
@@ -215,7 +224,69 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* OAuth Credentials */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="client_id">Client ID</Label>
+              <Input
+                id="client_id"
+                type="text"
+                placeholder="Enter your Salesforce Connected App Client ID"
+                value={config?.client_id || ''}
+                onChange={(e) => setConfig(prev => prev ? { ...prev, client_id: e.target.value } : {
+                  id: '',
+                  enabled: false,
+                  instance_url: null,
+                  auto_export_on_escalation: false,
+                  auto_export_on_conversation_end: false,
+                  field_mappings: {},
+                  client_id: e.target.value,
+                  client_secret: '',
+                })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="client_secret">Client Secret</Label>
+              <div className="relative">
+                <Input
+                  id="client_secret"
+                  type={showClientSecret ? 'text' : 'password'}
+                  placeholder="Enter your Salesforce Connected App Client Secret"
+                  value={config?.client_secret || ''}
+                  onChange={(e) => setConfig(prev => prev ? { ...prev, client_secret: e.target.value } : {
+                    id: '',
+                    enabled: false,
+                    instance_url: null,
+                    auto_export_on_escalation: false,
+                    auto_export_on_conversation_end: false,
+                    field_mappings: {},
+                    client_id: '',
+                    client_secret: e.target.value,
+                  })}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowClientSecret(!showClientSecret)}
+                >
+                  {showClientSecret ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                You can find these in your Salesforce Connected App settings
+              </p>
+            </div>
+          </div>
+
+          {/* Connection Status */}
           {config?.instance_url ? (
             <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
               <div>
@@ -228,17 +299,14 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
               </Button>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-4 py-6">
-              <p className="text-muted-foreground text-center">
-                Connect your Salesforce account to start exporting conversation leads.
+            <div className="flex flex-col items-center gap-4 py-4 border rounded-lg bg-muted/50">
+              <p className="text-sm text-muted-foreground text-center">
+                Enter your OAuth credentials above, save, then connect your account.
               </p>
-              <Button>
+              <Button disabled={!config?.client_id || !config?.client_secret}>
                 <Link2 className="mr-2 h-4 w-4" />
                 Connect Salesforce
               </Button>
-              <p className="text-xs text-muted-foreground">
-                OAuth credentials need to be configured in the backend
-              </p>
             </div>
           )}
         </CardContent>

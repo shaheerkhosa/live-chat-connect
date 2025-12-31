@@ -365,6 +365,8 @@ export type Database = {
           access_token: string | null
           auto_export_on_conversation_end: boolean
           auto_export_on_escalation: boolean
+          client_id: string | null
+          client_secret: string | null
           created_at: string
           enabled: boolean
           field_mappings: Json
@@ -379,6 +381,8 @@ export type Database = {
           access_token?: string | null
           auto_export_on_conversation_end?: boolean
           auto_export_on_escalation?: boolean
+          client_id?: string | null
+          client_secret?: string | null
           created_at?: string
           enabled?: boolean
           field_mappings?: Json
@@ -393,6 +397,8 @@ export type Database = {
           access_token?: string | null
           auto_export_on_conversation_end?: boolean
           auto_export_on_escalation?: boolean
+          client_id?: string | null
+          client_secret?: string | null
           created_at?: string
           enabled?: boolean
           field_mappings?: Json
