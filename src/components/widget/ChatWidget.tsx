@@ -46,8 +46,14 @@ export const ChatWidget = ({
     settings, 
     requiresLeadCapture, 
     submitLeadInfo,
-    visitorInfo 
+    visitorInfo,
+    currentAiAgent,
+    aiAgents,
   } = useWidgetChat({ propertyId, greeting, isPreview });
+
+  // Use AI agent info if available, otherwise use props
+  const displayName = currentAiAgent?.name || agentName;
+  const displayAvatar = currentAiAgent?.avatar_url || agentAvatar;
 
   const videoChat = useVideoChat({
     onCallAccepted: () => {
@@ -336,16 +342,22 @@ export const ChatWidget = ({
             />
             <div className="flex items-center gap-3 relative z-10">
               <div 
-                className="h-11 w-11 backdrop-blur-sm flex items-center justify-center"
+                className="h-11 w-11 backdrop-blur-sm flex items-center justify-center overflow-hidden"
                 style={{ borderRadius: buttonRadius, background: `color-mix(in srgb, ${textColor} 20%, transparent)` }}
               >
-                <MessageCircle className="h-5 w-5" style={{ color: textColor }} />
+                {displayAvatar ? (
+                  <img src={displayAvatar} alt={displayName} className="h-full w-full object-cover" />
+                ) : (
+                  <MessageCircle className="h-5 w-5" style={{ color: textColor }} />
+                )}
               </div>
               <div>
-                <h3 className="font-semibold" style={{ color: textColor }}>{agentName}</h3>
+                <h3 className="font-semibold" style={{ color: textColor }}>{displayName}</h3>
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: textColor }} />
-                  <span className="text-xs" style={{ color: textColor, opacity: 0.8 }}>Here to help</span>
+                  <span className="text-xs" style={{ color: textColor, opacity: 0.8 }}>
+                    {aiAgents.length > 1 ? `AI Agent (${aiAgents.length} available)` : 'Here to help'}
+                  </span>
                 </div>
               </div>
             </div>

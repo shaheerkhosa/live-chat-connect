@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, propertyContext } = await req.json();
+    const { messages, propertyContext, personalityPrompt, agentName } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {
@@ -20,8 +20,32 @@ serve(async (req) => {
     }
 
     console.log('Processing chat request with', messages?.length || 0, 'messages');
+    if (agentName) {
+      console.log('Using AI agent:', agentName);
+    }
 
-    const systemPrompt = `You are a compassionate and helpful support assistant for an addiction treatment center. Your role is to:
+    // Build system prompt - use personality prompt if provided, otherwise use default
+    let systemPrompt: string;
+    
+    if (personalityPrompt) {
+      // Use the AI agent's custom personality
+      systemPrompt = `${personalityPrompt}
+
+Additional context for your role:
+- You are a compassionate support assistant for an addiction treatment center
+- Provide empathetic, non-judgmental responses
+- Help visitors understand treatment options
+- Keep responses concise but caring (2-3 sentences typically)
+- Never provide medical advice - encourage professional consultation
+- If someone is in crisis, gently suggest they call a helpline
+- Celebrate any steps toward recovery, no matter how small
+
+${propertyContext ? `Property context: ${propertyContext}` : ''}
+
+Remember: You're often the first point of contact for someone seeking help. Make them feel safe and heard.`;
+    } else {
+      // Default system prompt
+      systemPrompt = `You are a compassionate and helpful support assistant for an addiction treatment center. Your role is to:
 
 1. Provide empathetic, non-judgmental responses
 2. Help visitors understand treatment options
@@ -39,6 +63,7 @@ Guidelines:
 ${propertyContext ? `Property context: ${propertyContext}` : ''}
 
 Remember: You're often the first point of contact for someone seeking help. Make them feel safe and heard.`;
+    }
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
