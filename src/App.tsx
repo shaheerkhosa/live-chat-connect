@@ -9,7 +9,8 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import WidgetPreview from "./pages/WidgetPreview";
 import Analytics from "./pages/Analytics";
-import Agents from "./pages/Agents";
+import TeamMembers from "./pages/TeamMembers";
+import AISupport from "./pages/AISupport";
 import Auth from "./pages/Auth";
 import AdminDashboard from "./pages/AdminDashboard";
 import AgentDashboard from "./pages/AgentDashboard";
@@ -62,7 +63,8 @@ const AppRoutes = () => {
       <Route path="/dashboard/active" element={<RequireClient><Dashboard /></RequireClient>} />
       <Route path="/dashboard/pending" element={<RequireClient><Dashboard /></RequireClient>} />
       <Route path="/dashboard/closed" element={<RequireClient><Dashboard /></RequireClient>} />
-      <Route path="/dashboard/agents" element={<RequireClient><Agents /></RequireClient>} />
+      <Route path="/dashboard/team" element={<RequireClient><TeamMembers /></RequireClient>} />
+      <Route path="/dashboard/ai-support" element={<RequireClient><AISupport /></RequireClient>} />
       <Route path="/dashboard/analytics" element={<RequireClient><Analytics /></RequireClient>} />
       <Route path="/dashboard/widget" element={<RequireClient><WidgetPreview /></RequireClient>} />
       <Route path="/dashboard/settings" element={<RequireClient><Settings /></RequireClient>} />

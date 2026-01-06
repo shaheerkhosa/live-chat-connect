@@ -151,7 +151,8 @@ export const DashboardSidebar = () => {
         {/* Manage - Available to clients and admins */}
         {(isClient || isAdmin) && (
           <SidebarSection title="Manage" collapsed={collapsed}>
-            <SidebarItem to="/dashboard/agents" icon={Users} label="Agents" collapsed={collapsed} />
+            <SidebarItem to="/dashboard/team" icon={Users} label="Team Members" collapsed={collapsed} />
+            <SidebarItem to="/dashboard/ai-support" icon={MessageSquare} label="AI Support" collapsed={collapsed} />
             <SidebarItem to="/dashboard/analytics" icon={BarChart3} label="Analytics" collapsed={collapsed} />
           </SidebarSection>
         )}
