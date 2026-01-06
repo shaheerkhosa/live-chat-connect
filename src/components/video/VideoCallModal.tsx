@@ -46,13 +46,13 @@ export const VideoCallModal = ({
   onDecline,
 }: VideoCallModalProps) => {
   const handleClose = () => {
-    if (status === 'connected' || status === 'connecting' || status === 'requesting' || status === 'incoming') {
+    if (status === 'connected' || status === 'connecting' || status === 'requesting') {
       onEndCall();
     }
     onClose();
   };
 
-  const isIncoming = status === 'incoming' || (status === 'requesting' && !isInitiator);
+  const isIncoming = status === 'requesting' && !isInitiator;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>

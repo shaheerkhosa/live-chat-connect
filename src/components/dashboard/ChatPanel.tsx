@@ -20,7 +20,6 @@ import { mockAgents } from '@/data/mockData';
 import { useVideoChat } from '@/hooks/useVideoChat';
 import { VideoCallModal } from '@/components/video/VideoCallModal';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
 interface ChatPanelProps {
   conversation: Conversation | null;
   onSendMessage: (content: string) => void;
@@ -174,17 +173,12 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { user } = useAuth();
 
   const videoChat = useVideoChat({
-    conversationId: conversation?.id || null,
-    participantType: 'agent',
-    participantId: user?.id || 'agent',
-    participantName: user?.email?.split('@')[0] || 'Agent',
-    onCallRequest: (callerName) => {
+    onCallRequest: () => {
       toast({
-        title: "Incoming call",
-        description: `${callerName} is calling...`,
+        title: "Calling visitor",
+        description: "Waiting for visitor to accept...",
       });
     },
     onCallAccepted: () => {
@@ -198,16 +192,8 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
         title: "Call ended",
         description: "The video call has ended",
       });
-      setIsVideoCallOpen(false);
     },
   });
-
-  // Handle incoming call from visitor
-  useEffect(() => {
-    if (videoChat.status === 'incoming') {
-      setIsVideoCallOpen(true);
-    }
-  }, [videoChat.status]);
 
   const handleStartVideoCall = async () => {
     setIsVideoCallOpen(true);
@@ -216,15 +202,6 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
 
   const handleEndVideoCall = () => {
     videoChat.endCall();
-    setIsVideoCallOpen(false);
-  };
-
-  const handleAcceptCall = async () => {
-    await videoChat.acceptCall();
-  };
-
-  const handleDeclineCall = async () => {
-    await videoChat.declineCall();
     setIsVideoCallOpen(false);
   };
 
@@ -381,9 +358,7 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
         onToggleMute={videoChat.toggleMute}
         onToggleVideo={videoChat.toggleVideo}
         participantName={visitorName}
-        isInitiator={videoChat.status !== 'incoming'}
-        onAccept={handleAcceptCall}
-        onDecline={handleDeclineCall}
+        isInitiator={true}
       />
     </div>
   );
