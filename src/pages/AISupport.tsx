@@ -43,7 +43,25 @@ interface PropertySettings {
   proactive_message: string | null;
   proactive_message_delay_seconds: number;
   proactive_message_enabled: boolean;
+  ai_base_prompt: string | null;
 }
+
+const DEFAULT_AI_PROMPT = `You are a compassionate and helpful support assistant for an addiction treatment center. Your role is to:
+
+1. Provide empathetic, non-judgmental responses
+2. Help visitors understand treatment options
+3. Answer questions about the recovery process
+4. Encourage visitors to take the first step toward getting help
+5. Be warm, supportive, and understanding
+
+Guidelines:
+- Keep responses concise but caring (2-3 sentences typically)
+- Never provide medical advice - encourage professional consultation
+- If someone is in crisis, gently suggest they call a helpline
+- Be patient and understanding - many visitors may be hesitant
+- Celebrate any steps toward recovery, no matter how small
+
+Remember: You're often the first point of contact for someone seeking help. Make them feel safe and heard.`;
 
 const AISupport = () => {
   const { user } = useAuth();
@@ -109,6 +127,7 @@ const AISupport = () => {
         proactive_message: data.proactive_message ?? null,
         proactive_message_delay_seconds: data.proactive_message_delay_seconds ?? 30,
         proactive_message_enabled: data.proactive_message_enabled ?? false,
+        ai_base_prompt: data.ai_base_prompt ?? null,
       });
     };
 
@@ -353,6 +372,7 @@ const AISupport = () => {
         proactive_message: settings.proactive_message,
         proactive_message_delay_seconds: settings.proactive_message_delay_seconds,
         proactive_message_enabled: settings.proactive_message_enabled,
+        ai_base_prompt: settings.ai_base_prompt,
       })
       .eq('id', settings.id);
 
@@ -642,6 +662,53 @@ const AISupport = () => {
           {/* AI Behavior Settings */}
           {settings && (
             <>
+              {/* Base Prompt Settings */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Bot className="h-5 w-5 text-muted-foreground" />
+                    <CardTitle>AI Base Prompt</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Customize the system prompt that defines how the AI behaves. This is the foundation for all AI responses.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="base-prompt">System Prompt</Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSettings({ ...settings, ai_base_prompt: null })}
+                        className="text-xs"
+                      >
+                        Reset to Default
+                      </Button>
+                    </div>
+                    <Textarea
+                      id="base-prompt"
+                      placeholder={DEFAULT_AI_PROMPT}
+                      value={settings.ai_base_prompt ?? ''}
+                      onChange={(e) => setSettings({ ...settings, ai_base_prompt: e.target.value || null })}
+                      rows={12}
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Leave empty to use the default prompt. AI persona personalities will be added on top of this base prompt.
+                    </p>
+                  </div>
+                  {!settings.ai_base_prompt && (
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Currently using default prompt:</p>
+                      <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono">
+                        {DEFAULT_AI_PROMPT}
+                      </pre>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Timing Settings */}
               <Card>
                 <CardHeader>

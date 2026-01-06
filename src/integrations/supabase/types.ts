@@ -332,6 +332,7 @@ export type Database = {
       }
       properties: {
         Row: {
+          ai_base_prompt: string | null
           ai_response_delay_max_ms: number | null
           ai_response_delay_min_ms: number | null
           auto_escalation_enabled: boolean | null
@@ -355,6 +356,7 @@ export type Database = {
           widget_color: string | null
         }
         Insert: {
+          ai_base_prompt?: string | null
           ai_response_delay_max_ms?: number | null
           ai_response_delay_min_ms?: number | null
           auto_escalation_enabled?: boolean | null
@@ -378,6 +380,7 @@ export type Database = {
           widget_color?: string | null
         }
         Update: {
+          ai_base_prompt?: string | null
           ai_response_delay_max_ms?: number | null
           ai_response_delay_min_ms?: number | null
           auto_escalation_enabled?: boolean | null

@@ -31,6 +31,7 @@ interface PropertySettings {
   proactive_message: string | null;
   proactive_message_delay_seconds: number;
   greeting: string | null;
+  ai_base_prompt: string | null;
 }
 
 interface WidgetChatConfig {
@@ -53,6 +54,7 @@ const DEFAULT_SETTINGS: PropertySettings = {
   proactive_message: null,
   proactive_message_delay_seconds: 30,
   greeting: null,
+  ai_base_prompt: null,
 };
 
 const getOrCreateSessionId = (): string => {
@@ -154,6 +156,7 @@ async function streamAIResponse({
   onError,
   personalityPrompt,
   agentName,
+  basePrompt,
 }: {
   messages: { role: 'user' | 'assistant'; content: string }[];
   onDelta: (text: string) => void;
@@ -161,6 +164,7 @@ async function streamAIResponse({
   onError: (error: string) => void;
   personalityPrompt?: string | null;
   agentName?: string;
+  basePrompt?: string | null;
 }) {
   try {
     const resp = await fetch(CHAT_URL, {
@@ -169,7 +173,7 @@ async function streamAIResponse({
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages, personalityPrompt, agentName }),
+      body: JSON.stringify({ messages, personalityPrompt, agentName, basePrompt }),
     });
 
     if (!resp.ok) {
@@ -323,7 +327,8 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         proactive_message_enabled,
         proactive_message,
         proactive_message_delay_seconds,
-        greeting
+        greeting,
+        ai_base_prompt
       `)
       .eq('id', propertyId)
       .single();
@@ -343,6 +348,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         proactive_message: data.proactive_message,
         proactive_message_delay_seconds: data.proactive_message_delay_seconds ?? DEFAULT_SETTINGS.proactive_message_delay_seconds,
         greeting: data.greeting,
+        ai_base_prompt: data.ai_base_prompt ?? null,
       });
 
       // Check if lead capture is required
@@ -712,6 +718,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
       messages: conversationHistory,
       personalityPrompt: respondingAgent?.personality_prompt,
       agentName: respondingAgent?.name,
+      basePrompt: settings.ai_base_prompt,
       onDelta: (delta) => {
         aiContent += delta;
         setMessages(prev => {
