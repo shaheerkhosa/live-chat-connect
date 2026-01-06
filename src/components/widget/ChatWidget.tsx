@@ -49,6 +49,8 @@ export const ChatWidget = ({
     visitorInfo,
     currentAiAgent,
     aiAgents,
+    conversationId,
+    visitorId,
   } = useWidgetChat({ propertyId, greeting, isPreview });
 
   // Use AI agent info if available, otherwise use props
@@ -56,24 +58,28 @@ export const ChatWidget = ({
   const displayAvatar = currentAiAgent?.avatar_url || agentAvatar;
 
   const videoChat = useVideoChat({
+    conversationId,
+    participantType: 'visitor',
+    participantId: visitorId || 'visitor',
+    participantName: visitorInfo.name || 'Visitor',
+    onCallRequest: (callerName) => {
+      setHasIncomingCall(true);
+    },
     onCallAccepted: () => {
       console.log('Video call connected');
     },
     onCallEnded: () => {
       setShowVideoCall(false);
+      setHasIncomingCall(false);
     },
   });
 
-  // Simulate incoming call from agent (for demo)
+  // Handle incoming call from agent via realtime signaling
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (isOpen && !showVideoCall && messages.length > 2) {
-        // Simulate agent initiating a call after some chat activity
-        // In real app, this would come from WebSocket
-      }
-    }, 10000);
-    return () => clearTimeout(timer);
-  }, [isOpen, showVideoCall, messages.length]);
+    if (videoChat.status === 'incoming') {
+      setHasIncomingCall(true);
+    }
+  }, [videoChat.status]);
 
   const handleStartVideoCall = async () => {
     setShowVideoCall(true);
@@ -180,7 +186,7 @@ export const ChatWidget = ({
               <Video className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-foreground">{agentName}</p>
+              <p className="font-semibold text-foreground">{videoChat.incomingCallerName || agentName}</p>
               <p className="text-sm text-muted-foreground">Incoming video call</p>
             </div>
           </div>
