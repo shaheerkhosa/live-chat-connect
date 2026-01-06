@@ -16,7 +16,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Users, UserPlus, Mail, Loader2, Trash2, RefreshCw, Send, Bot, Upload, Pencil } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
+import { PropertySelector } from '@/components/PropertySelector';
+import { Users, UserPlus, Mail, Loader2, Trash2, RefreshCw, Send, Bot, Upload, Pencil, Clock, MessageSquare, Save } from 'lucide-react';
 
 interface Agent {
   id: string;
@@ -36,6 +39,22 @@ interface AIAgent {
   personality_prompt?: string;
   status: string;
   assigned_properties: string[];
+}
+
+interface PropertySettings {
+  id: string;
+  ai_response_delay_min_ms: number;
+  ai_response_delay_max_ms: number;
+  typing_indicator_min_ms: number;
+  typing_indicator_max_ms: number;
+  max_ai_messages_before_escalation: number;
+  escalation_keywords: string[];
+  auto_escalation_enabled: boolean;
+  require_email_before_chat: boolean;
+  require_name_before_chat: boolean;
+  proactive_message: string | null;
+  proactive_message_delay_seconds: number;
+  proactive_message_enabled: boolean;
 }
 
 const Agents = () => {
@@ -69,10 +88,59 @@ const Agents = () => {
   // Avatar upload state
   const [uploadingAvatarFor, setUploadingAvatarFor] = useState<string | null>(null);
 
+  // AI Settings state
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
+  const [settings, setSettings] = useState<PropertySettings | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [newKeyword, setNewKeyword] = useState('');
+
   useEffect(() => {
     fetchAgents();
     fetchAIAgents();
   }, [user]);
+
+  // Set first property as default for AI settings
+  useEffect(() => {
+    if (properties.length > 0 && !selectedPropertyId) {
+      setSelectedPropertyId(properties[0].id);
+    }
+  }, [properties, selectedPropertyId]);
+
+  // Fetch property settings for AI tab
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (!selectedPropertyId) return;
+
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', selectedPropertyId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching settings:', error);
+        return;
+      }
+
+      setSettings({
+        id: data.id,
+        ai_response_delay_min_ms: data.ai_response_delay_min_ms ?? 1000,
+        ai_response_delay_max_ms: data.ai_response_delay_max_ms ?? 2500,
+        typing_indicator_min_ms: data.typing_indicator_min_ms ?? 1500,
+        typing_indicator_max_ms: data.typing_indicator_max_ms ?? 3000,
+        max_ai_messages_before_escalation: data.max_ai_messages_before_escalation ?? 5,
+        escalation_keywords: data.escalation_keywords ?? ['crisis', 'emergency', 'suicide', 'help me', 'urgent'],
+        auto_escalation_enabled: data.auto_escalation_enabled ?? true,
+        require_email_before_chat: data.require_email_before_chat ?? false,
+        require_name_before_chat: data.require_name_before_chat ?? false,
+        proactive_message: data.proactive_message ?? null,
+        proactive_message_delay_seconds: data.proactive_message_delay_seconds ?? 30,
+        proactive_message_enabled: data.proactive_message_enabled ?? false,
+      });
+    };
+
+    fetchSettings();
+  }, [selectedPropertyId]);
 
   const fetchAgents = async () => {
     if (!user) return;
@@ -462,7 +530,6 @@ const Agents = () => {
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) {
-        // Try creating the bucket if it doesn't exist
         if (uploadError.message.includes('bucket') || uploadError.message.includes('not found')) {
           toast.error('Avatar storage not configured. Please contact support.');
           setUploadingAvatarFor(null);
@@ -496,6 +563,61 @@ const Agents = () => {
     }
 
     setUploadingAvatarFor(null);
+  };
+
+  // AI Settings handlers
+  const handleSaveSettings = async () => {
+    if (!settings) return;
+
+    setIsSaving(true);
+    const { error } = await supabase
+      .from('properties')
+      .update({
+        ai_response_delay_min_ms: settings.ai_response_delay_min_ms,
+        ai_response_delay_max_ms: settings.ai_response_delay_max_ms,
+        typing_indicator_min_ms: settings.typing_indicator_min_ms,
+        typing_indicator_max_ms: settings.typing_indicator_max_ms,
+        max_ai_messages_before_escalation: settings.max_ai_messages_before_escalation,
+        escalation_keywords: settings.escalation_keywords,
+        auto_escalation_enabled: settings.auto_escalation_enabled,
+        require_email_before_chat: settings.require_email_before_chat,
+        require_name_before_chat: settings.require_name_before_chat,
+        proactive_message: settings.proactive_message,
+        proactive_message_delay_seconds: settings.proactive_message_delay_seconds,
+        proactive_message_enabled: settings.proactive_message_enabled,
+      })
+      .eq('id', settings.id);
+
+    setIsSaving(false);
+
+    if (error) {
+      toast.error('Failed to save settings');
+      console.error('Error saving settings:', error);
+      return;
+    }
+
+    toast.success('Settings saved successfully');
+  };
+
+  const addKeyword = () => {
+    if (!newKeyword.trim() || !settings) return;
+    if (settings.escalation_keywords.includes(newKeyword.trim().toLowerCase())) {
+      toast.error('Keyword already exists');
+      return;
+    }
+    setSettings({
+      ...settings,
+      escalation_keywords: [...settings.escalation_keywords, newKeyword.trim().toLowerCase()],
+    });
+    setNewKeyword('');
+  };
+
+  const removeKeyword = (keyword: string) => {
+    if (!settings) return;
+    setSettings({
+      ...settings,
+      escalation_keywords: settings.escalation_keywords.filter(k => k !== keyword),
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -570,7 +692,7 @@ const Agents = () => {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-foreground">Agents</h1>
-              <p className="text-sm text-muted-foreground">Manage your team members and AI agents</p>
+              <p className="text-sm text-muted-foreground">Manage your team and AI support</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -586,15 +708,15 @@ const Agents = () => {
             <TabsList>
               <TabsTrigger value="human" className="gap-2">
                 <Users className="h-4 w-4" />
-                Human Agents
+                Team Members
               </TabsTrigger>
               <TabsTrigger value="ai" className="gap-2">
                 <Bot className="h-4 w-4" />
-                AI Agents
+                AI Support
               </TabsTrigger>
             </TabsList>
 
-            {/* Human Agents Tab */}
+            {/* Team Members Tab */}
             <TabsContent value="human">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -806,14 +928,46 @@ const Agents = () => {
               </Card>
             </TabsContent>
 
-            {/* AI Agents Tab */}
-            <TabsContent value="ai">
+            {/* AI Support Tab */}
+            <TabsContent value="ai" className="space-y-6">
+              {/* Property Selector for AI Settings */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base">Configure AI for Property</CardTitle>
+                      <CardDescription>Select a property to configure its AI behavior</CardDescription>
+                    </div>
+                    <Button onClick={handleSaveSettings} disabled={isSaving || !settings} size="sm">
+                      {isSaving ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="mr-2 h-4 w-4" />
+                      )}
+                      Save Changes
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <PropertySelector
+                    properties={properties}
+                    selectedPropertyId={selectedPropertyId}
+                    onPropertyChange={setSelectedPropertyId}
+                    onDeleteProperty={async () => false}
+                    showDomain
+                    showIcon={false}
+                    className="w-full max-w-md"
+                  />
+                </CardContent>
+              </Card>
+
+              {/* AI Agents Management */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle>AI Agents</CardTitle>
+                    <CardTitle>AI Personas</CardTitle>
                     <CardDescription>
-                      Virtual agents powered by AI with customizable personalities
+                      Create virtual agents with unique personalities - they cycle through conversations
                     </CardDescription>
                   </div>
                   <Dialog open={isAIDialogOpen} onOpenChange={(open) => {
@@ -828,12 +982,12 @@ const Agents = () => {
                     <DialogTrigger asChild>
                       <Button>
                         <Bot className="mr-2 h-4 w-4" />
-                        Create AI Agent
+                        Create AI Persona
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-lg">
                       <DialogHeader>
-                        <DialogTitle>{editingAIAgent ? 'Edit AI Agent' : 'Create AI Agent'}</DialogTitle>
+                        <DialogTitle>{editingAIAgent ? 'Edit AI Persona' : 'Create AI Persona'}</DialogTitle>
                         <DialogDescription>
                           Create a virtual agent with a unique personality to assist visitors.
                         </DialogDescription>
@@ -855,10 +1009,10 @@ const Agents = () => {
                             placeholder="You are a warm and empathetic support specialist. You speak in a calm, reassuring tone and always make visitors feel heard and understood..."
                             value={aiAgentPersonality}
                             onChange={(e) => setAIAgentPersonality(e.target.value)}
-                            rows={4}
+                            rows={6}
                           />
                           <p className="text-xs text-muted-foreground">
-                            Describe how this AI agent should communicate and behave.
+                            Describe how this AI persona should communicate and behave. This becomes the system prompt for the AI.
                           </p>
                         </div>
                         <div className="space-y-2">
@@ -896,7 +1050,7 @@ const Agents = () => {
                           disabled={isCreatingAI || !aiAgentName.trim()}
                         >
                           {isCreatingAI && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                          {editingAIAgent ? 'Save Changes' : 'Create Agent'}
+                          {editingAIAgent ? 'Save Changes' : 'Create Persona'}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -904,27 +1058,27 @@ const Agents = () => {
                 </CardHeader>
                 <CardContent>
                   {aiLoading ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-                      Loading AI agents...
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                      Loading AI personas...
                     </div>
                   ) : aiAgents.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Bot className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                      <p className="font-medium text-lg">No AI agents yet</p>
-                      <p className="text-sm mb-4">Create AI agents with unique personalities to assist visitors</p>
-                      <Button onClick={() => setIsAIDialogOpen(true)}>
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Bot className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                      <p className="font-medium">No AI personas yet</p>
+                      <p className="text-sm mb-3">Create personas with unique personalities</p>
+                      <Button size="sm" onClick={() => setIsAIDialogOpen(true)}>
                         <Bot className="mr-2 h-4 w-4" />
-                        Create Your First AI Agent
+                        Create Your First Persona
                       </Button>
                     </div>
                   ) : (
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>AI Agent</TableHead>
+                          <TableHead>Persona</TableHead>
                           <TableHead>Personality</TableHead>
-                          <TableHead>Assigned Properties</TableHead>
+                          <TableHead>Properties</TableHead>
                           <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -970,27 +1124,24 @@ const Agents = () => {
                               </p>
                             </TableCell>
                             <TableCell>
-                              <div className="flex flex-wrap gap-2">
+                              <div className="flex flex-wrap gap-1">
                                 {properties.map((prop) => {
                                   const isAssigned = agent.assigned_properties.includes(prop.id);
                                   return (
                                     <Badge
                                       key={prop.id}
                                       variant={isAssigned ? 'default' : 'outline'}
-                                      className="cursor-pointer"
+                                      className="cursor-pointer text-xs"
                                       onClick={() => handleToggleAIProperty(agent.id, prop.id, isAssigned)}
                                     >
                                       {prop.name}
                                     </Badge>
                                   );
                                 })}
-                                {properties.length === 0 && (
-                                  <span className="text-sm text-muted-foreground">No properties</span>
-                                )}
                               </div>
                             </TableCell>
                             <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
+                              <div className="flex items-center justify-end gap-1">
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -1016,6 +1167,247 @@ const Agents = () => {
                   )}
                 </CardContent>
               </Card>
+
+              {/* AI Behavior Settings */}
+              {settings && (
+                <>
+                  {/* Timing Settings */}
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-5 w-5 text-muted-foreground" />
+                        <CardTitle>Response Timing</CardTitle>
+                      </div>
+                      <CardDescription>
+                        Add delays to AI responses for a more human-like experience
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <Label>AI Response Delay</Label>
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {(settings.ai_response_delay_min_ms / 1000).toFixed(1)}s – {(settings.ai_response_delay_max_ms / 1000).toFixed(1)}s
+                          </span>
+                        </div>
+                        <Slider
+                          value={[settings.ai_response_delay_min_ms, settings.ai_response_delay_max_ms]}
+                          onValueChange={([min, max]) => setSettings({
+                            ...settings,
+                            ai_response_delay_min_ms: min,
+                            ai_response_delay_max_ms: max,
+                          })}
+                          min={0}
+                          max={5000}
+                          step={100}
+                          minStepsBetweenThumbs={1}
+                        />
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <Label>Typing Indicator Duration</Label>
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {(settings.typing_indicator_min_ms / 1000).toFixed(1)}s – {(settings.typing_indicator_max_ms / 1000).toFixed(1)}s
+                          </span>
+                        </div>
+                        <Slider
+                          value={[settings.typing_indicator_min_ms, settings.typing_indicator_max_ms]}
+                          onValueChange={([min, max]) => setSettings({
+                            ...settings,
+                            typing_indicator_min_ms: min,
+                            typing_indicator_max_ms: max,
+                          })}
+                          min={500}
+                          max={5000}
+                          step={100}
+                          minStepsBetweenThumbs={1}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Escalation Settings */}
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center gap-2">
+                        <Bot className="h-5 w-5 text-muted-foreground" />
+                        <CardTitle>Escalation Rules</CardTitle>
+                      </div>
+                      <CardDescription>
+                        Configure when conversations should escalate to human agents
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label>Auto-Escalation</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Escalate after a set number of AI messages
+                          </p>
+                        </div>
+                        <Switch
+                          checked={settings.auto_escalation_enabled}
+                          onCheckedChange={(checked) => setSettings({
+                            ...settings,
+                            auto_escalation_enabled: checked,
+                          })}
+                        />
+                      </div>
+
+                      {settings.auto_escalation_enabled && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <Label>Messages Before Escalation</Label>
+                            <span className="text-sm font-medium text-muted-foreground">
+                              {settings.max_ai_messages_before_escalation} messages
+                            </span>
+                          </div>
+                          <Slider
+                            value={[settings.max_ai_messages_before_escalation]}
+                            onValueChange={([val]) => setSettings({
+                              ...settings,
+                              max_ai_messages_before_escalation: val,
+                            })}
+                            min={2}
+                            max={15}
+                            step={1}
+                          />
+                        </div>
+                      )}
+
+                      <div className="space-y-3">
+                        <Label>Escalation Keywords</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Trigger immediate escalation when these words are detected
+                        </p>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Add keyword..."
+                            value={newKeyword}
+                            onChange={(e) => setNewKeyword(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && addKeyword()}
+                          />
+                          <Button onClick={addKeyword} variant="secondary">
+                            Add
+                          </Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {settings.escalation_keywords.map((keyword) => (
+                            <Badge key={keyword} variant="secondary" className="gap-1 pr-1">
+                              {keyword}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-4 w-4 hover:bg-destructive/20"
+                                onClick={() => removeKeyword(keyword)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Engagement Settings */}
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                        <CardTitle>Engagement</CardTitle>
+                      </div>
+                      <CardDescription>
+                        Configure lead capture and proactive messaging
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label>Require Name</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Ask for visitor's name before chat
+                          </p>
+                        </div>
+                        <Switch
+                          checked={settings.require_name_before_chat}
+                          onCheckedChange={(checked) => setSettings({
+                            ...settings,
+                            require_name_before_chat: checked,
+                          })}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label>Require Email</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Ask for visitor's email before chat
+                          </p>
+                        </div>
+                        <Switch
+                          checked={settings.require_email_before_chat}
+                          onCheckedChange={(checked) => setSettings({
+                            ...settings,
+                            require_email_before_chat: checked,
+                          })}
+                        />
+                      </div>
+
+                      <div className="border-t pt-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="space-y-0.5">
+                            <Label>Proactive Message</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Automatically open widget with a message
+                            </p>
+                          </div>
+                          <Switch
+                            checked={settings.proactive_message_enabled}
+                            onCheckedChange={(checked) => setSettings({
+                              ...settings,
+                              proactive_message_enabled: checked,
+                            })}
+                          />
+                        </div>
+
+                        {settings.proactive_message_enabled && (
+                          <div className="space-y-4">
+                            <Textarea
+                              placeholder="Hi! Need help finding the right treatment option?"
+                              value={settings.proactive_message || ''}
+                              onChange={(e) => setSettings({
+                                ...settings,
+                                proactive_message: e.target.value,
+                              })}
+                              rows={3}
+                            />
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <Label>Delay Before Showing</Label>
+                                <span className="text-sm font-medium text-muted-foreground">
+                                  {settings.proactive_message_delay_seconds}s
+                                </span>
+                              </div>
+                              <Slider
+                                value={[settings.proactive_message_delay_seconds]}
+                                onValueChange={([val]) => setSettings({
+                                  ...settings,
+                                  proactive_message_delay_seconds: val,
+                                })}
+                                min={5}
+                                max={120}
+                                step={5}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
             </TabsContent>
           </Tabs>
         </div>
@@ -1047,9 +1439,9 @@ const Agents = () => {
       <AlertDialog open={!!deleteAIAgentId} onOpenChange={(open) => !open && setDeleteAIAgentId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove AI Agent</AlertDialogTitle>
+            <AlertDialogTitle>Remove AI Persona</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove this AI agent? This action cannot be undone.
+              Are you sure you want to remove this AI persona? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1059,7 +1451,7 @@ const Agents = () => {
               disabled={isDeletingAI}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isDeletingAI ? 'Removing...' : 'Remove AI Agent'}
+              {isDeletingAI ? 'Removing...' : 'Remove Persona'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
