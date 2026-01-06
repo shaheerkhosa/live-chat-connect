@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Conversation } from '@/types/chat';
@@ -5,6 +6,16 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Globe, Clock, User, FlaskConical, Trash2, MessageSquare } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -23,6 +34,7 @@ interface ConversationItemProps {
 }
 
 const ConversationItem = ({ conversation, isSelected, onClick, showDelete, onDelete }: ConversationItemProps) => {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { visitor, lastMessage, unreadCount, status } = conversation;
   const isTest = (conversation as any).isTest;
   const visitorName = isTest ? 'Test Visitor' : (visitor.name || `Visitor ${visitor.sessionId.slice(-4)}`);
@@ -74,17 +86,38 @@ const ConversationItem = ({ conversation, isSelected, onClick, showDelete, onDel
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               {showDelete && onDelete && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(conversation.id);
-                  }}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeleteDialog(true);
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete this conversation and all its messages. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => onDelete(conversation.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
               )}
               {unreadCount > 0 && !showDelete && (
                 <Badge variant="default" className="bg-primary text-primary-foreground h-5 min-w-[20px] flex items-center justify-center">
