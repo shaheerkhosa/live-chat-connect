@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { PropertySelector } from '@/components/PropertySelector';
-import { Bot, Loader2, Trash2, RefreshCw, Upload, Pencil, Clock, MessageSquare, Save } from 'lucide-react';
+import { Bot, Loader2, Trash2, RefreshCw, Upload, Pencil, Clock, MessageSquare, Save, FileText } from 'lucide-react';
 
 interface AIAgent {
   id: string;
@@ -85,6 +85,7 @@ const AISupport = () => {
   const [settings, setSettings] = useState<PropertySettings | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [newKeyword, setNewKeyword] = useState('');
+  const [isBasePromptDialogOpen, setIsBasePromptDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchAIAgents();
@@ -662,53 +663,6 @@ const AISupport = () => {
           {/* AI Behavior Settings */}
           {settings && (
             <>
-              {/* Base Prompt Settings */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Bot className="h-5 w-5 text-muted-foreground" />
-                    <CardTitle>AI Base Prompt</CardTitle>
-                  </div>
-                  <CardDescription>
-                    Customize the system prompt that defines how the AI behaves. This is the foundation for all AI responses.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="base-prompt">System Prompt</Label>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSettings({ ...settings, ai_base_prompt: null })}
-                        className="text-xs"
-                      >
-                        Reset to Default
-                      </Button>
-                    </div>
-                    <Textarea
-                      id="base-prompt"
-                      placeholder={DEFAULT_AI_PROMPT}
-                      value={settings.ai_base_prompt ?? ''}
-                      onChange={(e) => setSettings({ ...settings, ai_base_prompt: e.target.value || null })}
-                      rows={12}
-                      className="font-mono text-sm"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Leave empty to use the default prompt. AI persona personalities will be added on top of this base prompt.
-                    </p>
-                  </div>
-                  {!settings.ai_base_prompt && (
-                    <div className="bg-muted/50 rounded-lg p-4">
-                      <p className="text-xs font-medium text-muted-foreground mb-2">Currently using default prompt:</p>
-                      <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono">
-                        {DEFAULT_AI_PROMPT}
-                      </pre>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
               {/* Timing Settings */}
               <Card>
                 <CardHeader>
@@ -944,10 +898,94 @@ const AISupport = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* AI Base Prompt Button */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                    <CardTitle>AI Base Prompt</CardTitle>
+                  </div>
+                  <CardDescription>
+                    Customize the foundational system prompt that defines how the AI behaves
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      {settings.ai_base_prompt ? 'Using custom prompt' : 'Using default prompt'}
+                    </div>
+                    <Button onClick={() => setIsBasePromptDialogOpen(true)}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Change AI Base Prompt
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </>
           )}
         </div>
       </div>
+
+      {/* AI Base Prompt Dialog */}
+      <Dialog open={isBasePromptDialogOpen} onOpenChange={setIsBasePromptDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>AI Base Prompt</DialogTitle>
+            <DialogDescription>
+              Customize the system prompt that defines how the AI behaves. This is the foundation for all AI responses.
+            </DialogDescription>
+          </DialogHeader>
+          {settings && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="base-prompt">System Prompt</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSettings({ ...settings, ai_base_prompt: null })}
+                    className="text-xs"
+                  >
+                    Reset to Default
+                  </Button>
+                </div>
+                <Textarea
+                  id="base-prompt"
+                  placeholder={DEFAULT_AI_PROMPT}
+                  value={settings.ai_base_prompt ?? ''}
+                  onChange={(e) => setSettings({ ...settings, ai_base_prompt: e.target.value || null })}
+                  rows={12}
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Leave empty to use the default prompt. AI persona personalities will be added on top of this base prompt.
+                </p>
+              </div>
+              {!settings.ai_base_prompt && (
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Currently using default prompt:</p>
+                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono">
+                    {DEFAULT_AI_PROMPT}
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBasePromptDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              handleSaveSettings();
+              setIsBasePromptDialogOpen(false);
+            }} disabled={isSaving}>
+              {isSaving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete AI Agent Confirmation */}
       <AlertDialog open={!!deleteAIAgentId} onOpenChange={(open) => !open && setDeleteAIAgentId(null)}>

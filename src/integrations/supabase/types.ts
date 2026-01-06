@@ -618,6 +618,44 @@ export type Database = {
         }
         Relationships: []
       }
+      video_call_signals: {
+        Row: {
+          caller_id: string
+          caller_type: string
+          conversation_id: string
+          created_at: string
+          id: string
+          signal_data: Json | null
+          signal_type: string
+        }
+        Insert: {
+          caller_id: string
+          caller_type: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          signal_data?: Json | null
+          signal_type: string
+        }
+        Update: {
+          caller_id?: string
+          caller_type?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          signal_data?: Json | null
+          signal_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_call_signals_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visitors: {
         Row: {
           age: string | null
