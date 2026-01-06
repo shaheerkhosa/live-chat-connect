@@ -3,21 +3,26 @@ import { cn } from '@/lib/utils';
 import { Conversation } from '@/types/chat';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Globe, Clock, User, FlaskConical } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Globe, Clock, User, FlaskConical, Trash2, MessageSquare } from 'lucide-react';
 
 interface ConversationListProps {
   conversations: Conversation[];
   selectedId?: string;
   onSelect: (conversation: Conversation) => void;
+  showDelete?: boolean;
+  onDelete?: (conversationId: string) => void;
 }
 
 interface ConversationItemProps {
   conversation: Conversation & { isTest?: boolean };
   isSelected: boolean;
   onClick: () => void;
+  showDelete?: boolean;
+  onDelete?: (conversationId: string) => void;
 }
 
-const ConversationItem = ({ conversation, isSelected, onClick }: ConversationItemProps) => {
+const ConversationItem = ({ conversation, isSelected, onClick, showDelete, onDelete }: ConversationItemProps) => {
   const { visitor, lastMessage, unreadCount, status } = conversation;
   const isTest = (conversation as any).isTest;
   const visitorName = isTest ? 'Test Visitor' : (visitor.name || `Visitor ${visitor.sessionId.slice(-4)}`);
@@ -68,7 +73,20 @@ const ConversationItem = ({ conversation, isSelected, onClick }: ConversationIte
               )}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              {unreadCount > 0 && (
+              {showDelete && onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(conversation.id);
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {unreadCount > 0 && !showDelete && (
                 <Badge variant="default" className="bg-primary text-primary-foreground h-5 min-w-[20px] flex items-center justify-center">
                   {unreadCount}
                 </Badge>
@@ -115,7 +133,7 @@ const ConversationItem = ({ conversation, isSelected, onClick }: ConversationIte
   );
 };
 
-export const ConversationList = ({ conversations, selectedId, onSelect }: ConversationListProps) => {
+export const ConversationList = ({ conversations, selectedId, onSelect, showDelete, onDelete }: ConversationListProps) => {
   if (conversations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
@@ -138,10 +156,10 @@ export const ConversationList = ({ conversations, selectedId, onSelect }: Conver
           conversation={conversation}
           isSelected={conversation.id === selectedId}
           onClick={() => onSelect(conversation)}
+          showDelete={showDelete}
+          onDelete={onDelete}
         />
       ))}
     </div>
   );
 };
-
-import { MessageSquare } from 'lucide-react';

@@ -10,8 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Inbox,
-  Archive,
-  Clock
+  Archive
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -90,16 +89,19 @@ export const DashboardSidebar = () => {
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User';
   const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-  // Calculate badge counts as number of conversations (not messages)
+  // Calculate badge counts - "All" shows unread count, "Active" shows non-closed count
   const badgeCounts = useMemo(() => {
-    const allCount = conversations.length;
-    const activeCount = conversations.filter(c => c.status === 'active').length;
-    const pendingCount = conversations.filter(c => c.status === 'pending').length;
+    // Count conversations with unread visitor messages
+    const unreadCount = conversations.filter(c => 
+      c.messages?.some(m => !m.read && m.sender_type === 'visitor')
+    ).length;
+    
+    // Active = all non-closed conversations
+    const activeCount = conversations.filter(c => c.status !== 'closed').length;
 
     return {
-      all: allCount,
+      all: unreadCount,
       active: activeCount,
-      pending: pendingCount,
     };
   }, [conversations]);
 
@@ -143,7 +145,6 @@ export const DashboardSidebar = () => {
           <SidebarSection title="Inbox" collapsed={collapsed}>
             <SidebarItem to="/dashboard" icon={Inbox} label="All Conversations" badge={badgeCounts.all > 0 ? badgeCounts.all : undefined} collapsed={collapsed} />
             <SidebarItem to="/dashboard/active" icon={MessageSquare} label="Active" badge={badgeCounts.active > 0 ? badgeCounts.active : undefined} collapsed={collapsed} />
-            <SidebarItem to="/dashboard/pending" icon={Clock} label="Pending" badge={badgeCounts.pending > 0 ? badgeCounts.pending : undefined} collapsed={collapsed} />
             <SidebarItem to="/dashboard/closed" icon={Archive} label="Closed" collapsed={collapsed} />
           </SidebarSection>
         )}

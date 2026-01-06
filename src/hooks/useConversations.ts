@@ -183,6 +183,36 @@ export const useConversations = () => {
     return true;
   };
 
+  const deleteConversation = async (conversationId: string) => {
+    // First delete all messages for this conversation
+    const { error: messagesError } = await supabase
+      .from('messages')
+      .delete()
+      .eq('conversation_id', conversationId);
+
+    if (messagesError) {
+      console.error('Error deleting messages:', messagesError);
+      toast.error('Failed to delete conversation');
+      return false;
+    }
+
+    // Then delete the conversation
+    const { error } = await supabase
+      .from('conversations')
+      .delete()
+      .eq('id', conversationId);
+
+    if (error) {
+      console.error('Error deleting conversation:', error);
+      toast.error('Failed to delete conversation');
+      return false;
+    }
+
+    toast.success('Conversation deleted');
+    await fetchConversations();
+    return true;
+  };
+
   const createProperty = async (name: string, domain: string) => {
     if (!user) return null;
 
@@ -301,6 +331,7 @@ export const useConversations = () => {
     sendMessage,
     markMessagesAsRead,
     closeConversation,
+    deleteConversation,
     createProperty,
     deleteProperty,
     refetch: fetchConversations,

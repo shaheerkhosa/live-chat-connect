@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, Filter, Plus } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Search, Filter, Plus, Trash2 } from 'lucide-react';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { ConversationList } from '@/components/dashboard/ConversationList';
 import { ChatPanel } from '@/components/dashboard/ChatPanel';
@@ -20,7 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SidebarStateProvider, useSidebarState } from '@/hooks/useSidebarState';
 
-type FilterStatus = 'all' | 'active' | 'pending' | 'closed';
+type FilterStatus = 'all' | 'active' | 'closed';
 
 // Convert DB conversation to UI conversation format
 const toUiConversation = (dbConv: DbConversation): Conversation & { isTest?: boolean } => ({
@@ -61,9 +61,17 @@ const toUiConversation = (dbConv: DbConversation): Conversation & { isTest?: boo
 const DashboardContent = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { conversations: dbConversations, properties, loading: dataLoading, sendMessage, markMessagesAsRead, closeConversation } = useConversations();
+  const location = useLocation();
+  const { conversations: dbConversations, properties, loading: dataLoading, sendMessage, markMessagesAsRead, closeConversation, deleteConversation } = useConversations();
   const { setCollapsed } = useSidebarState();
+  
+  // Determine filter from path
+  const statusFilter = useMemo((): FilterStatus => {
+    if (location.pathname === '/dashboard/active') return 'active';
+    if (location.pathname === '/dashboard/closed') return 'closed';
+    return 'all';
+  }, [location.pathname]);
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
@@ -86,8 +94,6 @@ const DashboardContent = () => {
       navigate('/onboarding');
     }
   }, [propertiesChecked, properties.length, navigate]);
-
-  const statusFilter = (searchParams.get('status') as FilterStatus) || 'all';
   
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -107,7 +113,11 @@ const DashboardContent = () => {
 
   const filteredConversations = useMemo(() => {
     return conversations.filter(conv => {
-      if (statusFilter !== 'all' && conv.status !== statusFilter) return false;
+      // Filter by status based on path
+      if (statusFilter === 'active' && conv.status === 'closed') return false;
+      if (statusFilter === 'closed' && conv.status !== 'closed') return false;
+      // 'all' shows everything
+      
       if (propertyFilter !== 'all' && conv.propertyId !== propertyFilter) return false;
       
       if (searchQuery) {
@@ -148,6 +158,13 @@ const DashboardContent = () => {
   const handleCloseConversation = async () => {
     if (!selectedConversation) return;
     await closeConversation(selectedConversation.id);
+  };
+
+  const handleDeleteConversation = async (conversationId: string) => {
+    if (selectedConversationId === conversationId) {
+      setSelectedConversationId(null);
+    }
+    await deleteConversation(conversationId);
   };
 
   const handleCreateTestConversation = async () => {
@@ -219,11 +236,12 @@ const DashboardContent = () => {
   const getStatusTitle = () => {
     switch (statusFilter) {
       case 'active': return 'Active Conversations';
-      case 'pending': return 'Pending Conversations';
       case 'closed': return 'Closed Conversations';
       default: return 'All Conversations';
     }
   };
+
+  const isClosedView = statusFilter === 'closed';
 
   const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
 
@@ -288,6 +306,8 @@ const DashboardContent = () => {
             conversations={conversationsWithLastMessage}
             selectedId={selectedConversation?.id}
             onSelect={handleSelectConversation}
+            showDelete={isClosedView}
+            onDelete={handleDeleteConversation}
           />
         </div>
 

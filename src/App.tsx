@@ -61,7 +61,6 @@ const AppRoutes = () => {
       {/* Client routes */}
       <Route path="/dashboard" element={<RequireClient><Dashboard /></RequireClient>} />
       <Route path="/dashboard/active" element={<RequireClient><Dashboard /></RequireClient>} />
-      <Route path="/dashboard/pending" element={<RequireClient><Dashboard /></RequireClient>} />
       <Route path="/dashboard/closed" element={<RequireClient><Dashboard /></RequireClient>} />
       <Route path="/dashboard/team" element={<RequireClient><TeamMembers /></RequireClient>} />
       <Route path="/dashboard/ai-support" element={<RequireClient><AISupport /></RequireClient>} />
