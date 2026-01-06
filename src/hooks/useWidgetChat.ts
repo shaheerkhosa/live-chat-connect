@@ -8,6 +8,13 @@ interface Message {
   created_at: string;
 }
 
+export interface AIAgent {
+  id: string;
+  name: string;
+  avatar_url: string | null;
+  personality_prompt: string | null;
+}
+
 interface PropertySettings {
   ai_response_delay_min_ms: number;
   ai_response_delay_max_ms: number;
@@ -143,11 +150,15 @@ async function streamAIResponse({
   onDelta,
   onDone,
   onError,
+  personalityPrompt,
+  agentName,
 }: {
   messages: { role: 'user' | 'assistant'; content: string }[];
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
+  personalityPrompt?: string | null;
+  agentName?: string;
 }) {
   try {
     const resp = await fetch(CHAT_URL, {
@@ -156,7 +167,7 @@ async function streamAIResponse({
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages, personalityPrompt, agentName }),
     });
 
     if (!resp.ok) {
@@ -243,9 +254,66 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
   const [requiresLeadCapture, setRequiresLeadCapture] = useState(false);
   const [visitorInfo, setVisitorInfo] = useState<{ name?: string; email?: string }>({});
   const [showProactiveMessage, setShowProactiveMessage] = useState(false);
+  const [aiAgents, setAiAgents] = useState<AIAgent[]>([]);
+  const [currentAiAgent, setCurrentAiAgent] = useState<AIAgent | null>(null);
   
   const aiMessageCountRef = useRef(0);
   const proactiveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const aiAgentIndexRef = useRef(0);
+
+  // Fetch AI agents for this property
+  const fetchAiAgents = useCallback(async () => {
+    if (!propertyId || propertyId === 'demo') return;
+
+    // Get AI agents assigned to this property
+    const { data: assignments, error: assignError } = await supabase
+      .from('ai_agent_properties')
+      .select('ai_agent_id')
+      .eq('property_id', propertyId);
+
+    if (assignError || !assignments || assignments.length === 0) {
+      // If no assigned AI agents, get all AI agents owned by the property owner
+      const { data: property } = await supabase
+        .from('properties')
+        .select('user_id')
+        .eq('id', propertyId)
+        .single();
+
+      if (property) {
+        const { data: agents } = await supabase
+          .from('ai_agents')
+          .select('id, name, avatar_url, personality_prompt')
+          .eq('owner_id', property.user_id)
+          .eq('status', 'active');
+
+        if (agents && agents.length > 0) {
+          setAiAgents(agents);
+          setCurrentAiAgent(agents[0]);
+        }
+      }
+      return;
+    }
+
+    const agentIds = assignments.map(a => a.ai_agent_id);
+    const { data: agents, error } = await supabase
+      .from('ai_agents')
+      .select('id, name, avatar_url, personality_prompt')
+      .in('id', agentIds)
+      .eq('status', 'active');
+
+    if (!error && agents && agents.length > 0) {
+      setAiAgents(agents);
+      setCurrentAiAgent(agents[0]);
+    }
+  }, [propertyId]);
+
+  // Cycle to next AI agent
+  const cycleToNextAgent = useCallback(() => {
+    if (aiAgents.length <= 1) return;
+    
+    aiAgentIndexRef.current = (aiAgentIndexRef.current + 1) % aiAgents.length;
+    setCurrentAiAgent(aiAgents[aiAgentIndexRef.current]);
+  }, [aiAgents]);
 
   // Fetch property settings
   const fetchSettings = useCallback(async () => {
@@ -439,11 +507,15 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
   }, [settings.proactive_message_enabled, settings.proactive_message, settings.proactive_message_delay_seconds, messages]);
 
   const initializeChat = useCallback(async () => {
-    // Fetch settings first
-    await fetchSettings();
+    // Fetch settings and AI agents first
+    await Promise.all([fetchSettings(), fetchAiAgents()]);
 
     if (!propertyId || propertyId === 'demo' || isPreview) {
-      // In preview/demo mode, just add the greeting and use AI without database
+      // In preview/demo mode, also fetch AI agents
+      if (propertyId && propertyId !== 'demo') {
+        await fetchAiAgents();
+      }
+      // Just add the greeting and use AI without database
       if (greeting || settings.greeting) {
         setMessages([{
           id: 'greeting',
@@ -637,9 +709,11 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     const aiMessageId = `ai-${Date.now()}`;
     let aiContent = '';
 
-    // Stream AI response
+    // Stream AI response with current AI agent's personality
     await streamAIResponse({
       messages: conversationHistory,
+      personalityPrompt: currentAiAgent?.personality_prompt,
+      agentName: currentAiAgent?.name,
       onDelta: (delta) => {
         aiContent += delta;
         setMessages(prev => {
@@ -661,6 +735,9 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         
         // Increment AI message count
         aiMessageCountRef.current += 1;
+
+        // Cycle to next AI agent for next response
+        cycleToNextAgent();
 
         // Check if should auto-escalate based on message count
         if (
@@ -813,5 +890,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     requiresLeadCapture,
     submitLeadInfo,
     visitorInfo,
+    currentAiAgent,
+    aiAgents,
   };
 };
