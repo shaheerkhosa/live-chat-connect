@@ -462,37 +462,61 @@ export type Database = {
       }
       slack_notification_settings: {
         Row: {
+          access_token: string | null
+          bot_user_id: string | null
           channel_name: string | null
+          client_id: string | null
+          client_secret: string | null
           created_at: string
           enabled: boolean
           id: string
+          incoming_webhook_channel: string | null
+          incoming_webhook_url: string | null
+          legacy_webhook_url: string | null
           notify_on_escalation: boolean
           notify_on_new_conversation: boolean
           property_id: string
+          team_id: string | null
+          team_name: string | null
           updated_at: string
-          webhook_url: string | null
         }
         Insert: {
+          access_token?: string | null
+          bot_user_id?: string | null
           channel_name?: string | null
+          client_id?: string | null
+          client_secret?: string | null
           created_at?: string
           enabled?: boolean
           id?: string
+          incoming_webhook_channel?: string | null
+          incoming_webhook_url?: string | null
+          legacy_webhook_url?: string | null
           notify_on_escalation?: boolean
           notify_on_new_conversation?: boolean
           property_id: string
+          team_id?: string | null
+          team_name?: string | null
           updated_at?: string
-          webhook_url?: string | null
         }
         Update: {
+          access_token?: string | null
+          bot_user_id?: string | null
           channel_name?: string | null
+          client_id?: string | null
+          client_secret?: string | null
           created_at?: string
           enabled?: boolean
           id?: string
+          incoming_webhook_channel?: string | null
+          incoming_webhook_url?: string | null
+          legacy_webhook_url?: string | null
           notify_on_escalation?: boolean
           notify_on_new_conversation?: boolean
           property_id?: string
+          team_id?: string | null
+          team_name?: string | null
           updated_at?: string
-          webhook_url?: string | null
         }
         Relationships: [
           {

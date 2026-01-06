@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Save, Eye, EyeOff, Link2, ExternalLink } from 'lucide-react';
+import { Loader2, Save, Eye, EyeOff, Link2, Unlink, ExternalLink } from 'lucide-react';
 
 interface SlackSettingsProps {
   propertyId: string;
@@ -16,7 +16,12 @@ interface SlackSettingsProps {
 interface SlackConfig {
   id: string;
   enabled: boolean;
-  webhook_url: string;
+  client_id: string;
+  client_secret: string;
+  access_token: string | null;
+  team_id: string | null;
+  team_name: string | null;
+  incoming_webhook_channel: string | null;
   channel_name: string;
   notify_on_new_conversation: boolean;
   notify_on_escalation: boolean;
@@ -26,10 +31,26 @@ export const SlackSettings = ({ propertyId }: SlackSettingsProps) => {
   const [config, setConfig] = useState<SlackConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showWebhookUrl, setShowWebhookUrl] = useState(false);
+  const [showClientSecret, setShowClientSecret] = useState(false);
+
+  // Listen for OAuth callback messages from popup
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'slack-oauth-success') {
+        toast.success(`Connected to ${event.data.team || 'Slack'}!`);
+        fetchSettings(); // Refresh settings
+      } else if (event.data?.type === 'slack-oauth-error') {
+        toast.error(`Slack connection failed: ${event.data.error}`);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   useEffect(() => {
     fetchSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId]);
 
   const fetchSettings = async () => {
@@ -51,7 +72,12 @@ export const SlackSettings = ({ propertyId }: SlackSettingsProps) => {
       setConfig({
         id: data.id,
         enabled: data.enabled,
-        webhook_url: data.webhook_url || '',
+        client_id: data.client_id || '',
+        client_secret: data.client_secret || '',
+        access_token: data.access_token,
+        team_id: data.team_id,
+        team_name: data.team_name,
+        incoming_webhook_channel: data.incoming_webhook_channel,
         channel_name: data.channel_name || '',
         notify_on_new_conversation: data.notify_on_new_conversation,
         notify_on_escalation: data.notify_on_escalation,
@@ -68,7 +94,8 @@ export const SlackSettings = ({ propertyId }: SlackSettingsProps) => {
     const settingsData = {
       property_id: propertyId,
       enabled: config?.enabled ?? false,
-      webhook_url: config?.webhook_url || null,
+      client_id: config?.client_id || null,
+      client_secret: config?.client_secret || null,
       channel_name: config?.channel_name || null,
       notify_on_new_conversation: config?.notify_on_new_conversation ?? true,
       notify_on_escalation: config?.notify_on_escalation ?? true,
@@ -98,15 +125,65 @@ export const SlackSettings = ({ propertyId }: SlackSettingsProps) => {
 
     if (!config?.id && result.data) {
       setConfig({
-        ...settingsData,
+        ...config!,
         id: result.data.id,
-        webhook_url: config?.webhook_url || '',
-        channel_name: config?.channel_name || '',
       });
     }
 
     toast.success('Slack settings saved');
   };
+
+  const handleConnectSlack = async () => {
+    if (!config?.client_id) {
+      toast.error('Please enter your Slack Client ID first');
+      return;
+    }
+
+    // Save settings first to ensure client_id and client_secret are stored
+    await handleSave();
+
+    // Build the Slack OAuth URL using the edge function as redirect
+    const redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/slack-oauth-callback`;
+    const scopes = 'incoming-webhook,chat:write,channels:read';
+    const state = btoa(JSON.stringify({ propertyId }));
+
+    const slackAuthUrl = `https://slack.com/oauth/v2/authorize?client_id=${encodeURIComponent(config.client_id)}&scope=${encodeURIComponent(scopes)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}`;
+
+    window.open(slackAuthUrl, '_blank', 'width=600,height=700');
+  };
+
+  const handleDisconnect = async () => {
+    if (!config?.id) return;
+
+    const { error } = await supabase
+      .from('slack_notification_settings')
+      .update({
+        access_token: null,
+        team_id: null,
+        team_name: null,
+        incoming_webhook_channel: null,
+        incoming_webhook_url: null,
+        bot_user_id: null,
+      })
+      .eq('id', config.id);
+
+    if (error) {
+      toast.error('Failed to disconnect Slack');
+      return;
+    }
+
+    setConfig({
+      ...config,
+      access_token: null,
+      team_id: null,
+      team_name: null,
+      incoming_webhook_channel: null,
+    });
+
+    toast.success('Slack disconnected');
+  };
+
+  const isConnected = !!config?.access_token;
 
   if (loading) {
     return (
@@ -123,31 +200,58 @@ export const SlackSettings = ({ propertyId }: SlackSettingsProps) => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Slack Integration</CardTitle>
+              <CardTitle>Slack Connection</CardTitle>
               <CardDescription>
-                Receive notifications in Slack when new conversations start
+                Connect your Slack workspace to receive notifications
               </CardDescription>
             </div>
-            <Badge variant={config?.webhook_url ? 'default' : 'secondary'}>
-              {config?.webhook_url ? 'Configured' : 'Not Configured'}
+            <Badge variant={isConnected ? 'default' : 'secondary'}>
+              {isConnected ? 'Connected' : 'Not Connected'}
             </Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Webhook URL */}
+          {/* OAuth Credentials */}
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="webhook_url">Webhook URL</Label>
+              <Label htmlFor="slack_client_id">Client ID</Label>
+              <Input
+                id="slack_client_id"
+                type="text"
+                placeholder="Enter your Slack App Client ID"
+                value={config?.client_id || ''}
+                onChange={(e) => setConfig(prev => prev ? { ...prev, client_id: e.target.value } : {
+                  id: '',
+                  enabled: false,
+                  client_id: e.target.value,
+                  client_secret: '',
+                  access_token: null,
+                  team_id: null,
+                  team_name: null,
+                  incoming_webhook_channel: null,
+                  channel_name: '',
+                  notify_on_new_conversation: true,
+                  notify_on_escalation: true,
+                })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="slack_client_secret">Client Secret</Label>
               <div className="relative">
                 <Input
-                  id="webhook_url"
-                  type={showWebhookUrl ? 'text' : 'password'}
-                  placeholder="https://hooks.slack.com/services/..."
-                  value={config?.webhook_url || ''}
-                  onChange={(e) => setConfig(prev => prev ? { ...prev, webhook_url: e.target.value } : {
+                  id="slack_client_secret"
+                  type={showClientSecret ? 'text' : 'password'}
+                  placeholder="Enter your Slack App Client Secret"
+                  value={config?.client_secret || ''}
+                  onChange={(e) => setConfig(prev => prev ? { ...prev, client_secret: e.target.value } : {
                     id: '',
                     enabled: false,
-                    webhook_url: e.target.value,
+                    client_id: '',
+                    client_secret: e.target.value,
+                    access_token: null,
+                    team_id: null,
+                    team_name: null,
+                    incoming_webhook_channel: null,
                     channel_name: '',
                     notify_on_new_conversation: true,
                     notify_on_escalation: true,
@@ -159,9 +263,9 @@ export const SlackSettings = ({ propertyId }: SlackSettingsProps) => {
                   variant="ghost"
                   size="icon"
                   className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                  onClick={() => setShowWebhookUrl(!showWebhookUrl)}
+                  onClick={() => setShowClientSecret(!showClientSecret)}
                 >
-                  {showWebhookUrl ? (
+                  {showClientSecret ? (
                     <EyeOff className="h-4 w-4 text-muted-foreground" />
                   ) : (
                     <Eye className="h-4 w-4 text-muted-foreground" />
@@ -169,46 +273,56 @@ export const SlackSettings = ({ propertyId }: SlackSettingsProps) => {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Create an incoming webhook in your Slack workspace settings
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="channel_name">Channel Name (optional)</Label>
-              <Input
-                id="channel_name"
-                type="text"
-                placeholder="#customer-support"
-                value={config?.channel_name || ''}
-                onChange={(e) => setConfig(prev => prev ? { ...prev, channel_name: e.target.value } : {
-                  id: '',
-                  enabled: false,
-                  webhook_url: '',
-                  channel_name: e.target.value,
-                  notify_on_new_conversation: true,
-                  notify_on_escalation: true,
-                })}
-              />
-              <p className="text-xs text-muted-foreground">
-                For your reference only - the channel is determined by the webhook
+                Create a Slack App at api.slack.com/apps to get these credentials
               </p>
             </div>
           </div>
+
+          {/* Connection Status */}
+          {isConnected ? (
+            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+              <div>
+                <p className="font-medium">Connected to {config?.team_name || 'Slack'}</p>
+                {config?.incoming_webhook_channel && (
+                  <p className="text-sm text-muted-foreground">
+                    Channel: {config.incoming_webhook_channel}
+                  </p>
+                )}
+              </div>
+              <Button variant="outline" size="sm" className="text-destructive" onClick={handleDisconnect}>
+                <Unlink className="mr-2 h-4 w-4" />
+                Disconnect
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-4 py-4 border rounded-lg bg-muted/50">
+              <p className="text-sm text-muted-foreground text-center">
+                Enter your OAuth credentials above, save, then connect your workspace.
+              </p>
+              <Button 
+                disabled={!config?.client_id || !config?.client_secret}
+                onClick={handleConnectSlack}
+              >
+                <Link2 className="mr-2 h-4 w-4" />
+                Connect Slack
+              </Button>
+            </div>
+          )}
 
           {/* Help link */}
           <div className="flex items-center gap-2 p-4 bg-muted rounded-lg">
             <Link2 className="h-4 w-4 text-muted-foreground" />
             <p className="text-sm text-muted-foreground flex-1">
-              Need help setting up a Slack webhook?
+              Need help creating a Slack App?
             </p>
             <Button variant="outline" size="sm" asChild>
               <a 
-                href="https://api.slack.com/messaging/webhooks" 
+                href="https://api.slack.com/apps" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1"
               >
-                View Guide
+                Create Slack App
                 <ExternalLink className="h-3 w-3" />
               </a>
             </Button>
@@ -237,7 +351,12 @@ export const SlackSettings = ({ propertyId }: SlackSettingsProps) => {
               onCheckedChange={(checked) => setConfig(prev => prev ? { ...prev, enabled: checked } : {
                 id: '',
                 enabled: checked,
-                webhook_url: '',
+                client_id: '',
+                client_secret: '',
+                access_token: null,
+                team_id: null,
+                team_name: null,
+                incoming_webhook_channel: null,
                 channel_name: '',
                 notify_on_new_conversation: true,
                 notify_on_escalation: true,
