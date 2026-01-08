@@ -256,7 +256,8 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
   const [chatOpenTracked, setChatOpenTracked] = useState(false);
   const [humanEscalationTracked, setHumanEscalationTracked] = useState(false);
   const [settings, setSettings] = useState<PropertySettings>(DEFAULT_SETTINGS);
-  const [isEscalated, setIsEscalated] = useState(false);
+  const [isEscalated, setIsEscalated] = useState(false); // Escalation triggered (conversation visible to agents)
+  const [humanHasTakenOver, setHumanHasTakenOver] = useState(false); // Human agent has actually responded
   const [requiresLeadCapture, setRequiresLeadCapture] = useState(false);
   const [visitorInfo, setVisitorInfo] = useState<{ name?: string; email?: string }>({});
   const [showProactiveMessage, setShowProactiveMessage] = useState(false);
@@ -367,7 +368,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     );
   }, [settings.auto_escalation_enabled, settings.escalation_keywords]);
 
-  // Trigger escalation
+  // Trigger escalation - silently escalate without announcing to visitor
   const triggerEscalation = useCallback(async () => {
     if (isEscalated) return;
     
@@ -391,7 +392,6 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
             session_id: testSessionId,
             browser_info: 'Test Widget Preview',
             current_page: '/widget-preview',
-            name: 'Test Visitor',
           })
           .select()
           .single();
@@ -423,20 +423,21 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
               content: m.content,
             }));
 
-            // Add escalation message
-            messagesToSave.push({
-              conversation_id: testConversation.id,
-              sender_id: 'ai-bot',
-              sender_type: 'agent',
-              content: "I'm connecting you with a human agent who can better assist you. Please hold on.",
-            });
-
             if (messagesToSave.length > 0) {
               await supabase.from('messages').insert(messagesToSave);
             }
 
             setConversationId(testConversation.id);
             setVisitorId(testVisitor.id);
+
+            // Trigger extraction for test conversations too
+            const conversationHistory = allMessages.map(m => ({
+              role: m.sender_type === 'visitor' ? 'user' : 'assistant',
+              content: m.content,
+            }));
+            if (conversationHistory.length >= 2) {
+              extractVisitorInfo(testVisitor.id, conversationHistory);
+            }
           }
         }
       } catch (error) {
@@ -471,13 +472,8 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
       }
     }
 
-    // Add escalation message
-    setMessages(prev => [...prev, {
-      id: `escalation-${Date.now()}`,
-      content: "I'm connecting you with a human agent who can better assist you. Please hold on.",
-      sender_type: 'agent',
-      created_at: new Date().toISOString(),
-    }]);
+    // NO announcement message - AI will keep chatting until human takes over
+    // The conversation is now in 'active' status so human agents can see and respond
   }, [isEscalated, propertyId, humanEscalationTracked, conversationId, isPreview, messages, visitorId]);
 
   // Start proactive message timer
@@ -664,9 +660,9 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
       return;
     }
 
-    // If already escalated, don't use AI
-    if (isEscalated) {
-      // Just save the message to DB
+    // Only stop AI if human has actually taken over (not just escalated)
+    if (humanHasTakenOver) {
+      // Just save the message to DB - human agent is handling
       if (conversationId && visitorId) {
         await supabase
           .from('messages')
@@ -812,9 +808,9 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
             });
         }
         
-        // Extract visitor info in background (non-blocking)
-        // Only do this every few messages to avoid excessive API calls
-        if (conversationHistory.length >= 2 && conversationHistory.length % 2 === 0) {
+        // Extract visitor info in background after each AI response
+        // This allows us to capture details as they're shared naturally in conversation
+        if (conversationHistory.length >= 2) {
           extractVisitorInfo(visitorId, conversationHistory);
         }
       }
@@ -853,7 +849,10 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
           const rawMsg = payload.new as { id: string; content: string; sender_type: string; sender_id: string; created_at: string };
           // Only add agent messages that aren't from AI (human agent override)
           if (rawMsg.sender_type === 'agent' && rawMsg.sender_id !== 'ai-bot') {
-            // Mark as escalated when human agent responds
+            // Mark human has taken over - AI should stop responding
+            if (!humanHasTakenOver) {
+              setHumanHasTakenOver(true);
+            }
             if (!isEscalated) {
               setIsEscalated(true);
             }
@@ -883,7 +882,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, humanEscalationTracked, propertyId, isEscalated]);
+  }, [conversationId, humanEscalationTracked, propertyId, isEscalated, humanHasTakenOver]);
 
   return {
     messages,
