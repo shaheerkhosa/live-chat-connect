@@ -39,7 +39,14 @@ const features = [
 ];
 
 const Index = () => {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, isAgent, signOut } = useAuth();
+  
+  // Determine the correct dashboard route based on user role
+  const getDashboardRoute = () => {
+    if (isAgent) return '/conversations';
+    if (isAdmin) return '/admin';
+    return '/dashboard';
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -54,7 +61,7 @@ const Index = () => {
             <div className="flex items-center gap-4">
               {user ? (
                 <>
-                  <Link to="/dashboard">
+                  <Link to={getDashboardRoute()}>
                     <Button variant="ghost">Dashboard</Button>
                   </Link>
                   {isAdmin && (
@@ -100,7 +107,7 @@ const Index = () => {
               assign agents, and start chatting with visitors instantly.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/dashboard">
+              <Link to={getDashboardRoute()}>
                 <Button size="lg" className="chat-gradient text-primary-foreground hover:opacity-90 gap-2">
                   Open Dashboard
                   <ArrowRight className="h-5 w-5" />
