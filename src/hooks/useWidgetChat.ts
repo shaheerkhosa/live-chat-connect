@@ -365,11 +365,21 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
 
   // Check for escalation keywords in message
   const checkForEscalationKeywords = useCallback((content: string): boolean => {
-    if (!settings.auto_escalation_enabled) return false;
+    console.log('Checking escalation keywords:', {
+      auto_escalation_enabled: settings.auto_escalation_enabled,
+      keywords: settings.escalation_keywords,
+      content
+    });
+    if (!settings.auto_escalation_enabled) {
+      console.log('Auto escalation is disabled');
+      return false;
+    }
     const lowerContent = content.toLowerCase();
-    return settings.escalation_keywords.some(keyword => 
+    const matched = settings.escalation_keywords.some(keyword => 
       lowerContent.includes(keyword.toLowerCase())
     );
+    console.log('Keyword match result:', matched);
+    return matched;
   }, [settings.auto_escalation_enabled, settings.escalation_keywords]);
 
   // Trigger escalation - silently escalate without announcing to visitor
@@ -709,10 +719,10 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     // Store current agent for this message (before cycling)
     const respondingAgent = currentAiAgent;
 
-    // Calculate typing time based on word count (average ~40 WPM = 0.67 words per second)
+    // Calculate typing time based on word count (average ~90 WPM = 1.5 words per second)
     const calculateTypingTimeMs = (text: string): number => {
       const wordCount = text.trim().split(/\s+/).length;
-      const wordsPerSecond = 40 / 60; // 40 WPM
+      const wordsPerSecond = 90 / 60; // 90 WPM
       return Math.ceil((wordCount / wordsPerSecond) * 1000);
     };
 
