@@ -16,6 +16,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AgentDashboard from "./pages/AgentDashboard";
 import Onboarding from "./pages/Onboarding";
 import Settings from "./pages/Settings";
+import Support from "./pages/Support";
 import SlackApp from "./pages/SlackApp";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -67,6 +68,7 @@ const AppRoutes = () => {
       <Route path="/dashboard/analytics" element={<RequireClient><Analytics /></RequireClient>} />
       <Route path="/dashboard/widget" element={<RequireClient><WidgetPreview /></RequireClient>} />
       <Route path="/dashboard/settings" element={<RequireClient><Settings /></RequireClient>} />
+      <Route path="/dashboard/support" element={<RequireClient><Support /></RequireClient>} />
       
       <Route path="/widget-preview" element={<WidgetPreview />} />
       <Route path="/slack-app" element={<SlackApp />} />

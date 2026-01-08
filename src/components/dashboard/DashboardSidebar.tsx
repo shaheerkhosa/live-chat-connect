@@ -11,7 +11,8 @@ import {
   ChevronRight,
   Inbox,
   Archive,
-  FlaskConical
+  FlaskConical,
+  LifeBuoy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -164,6 +165,13 @@ export const DashboardSidebar = () => {
           <SidebarSection title="Setup" collapsed={collapsed}>
             <SidebarItem to="/dashboard/widget" icon={Code} label="Widget Code" collapsed={collapsed} />
             <SidebarItem to="/dashboard/settings" icon={Settings} label="Settings" collapsed={collapsed} />
+          </SidebarSection>
+        )}
+
+        {/* Support */}
+        {(isClient || isAdmin) && (
+          <SidebarSection title="Support" collapsed={collapsed}>
+            <SidebarItem to="/dashboard/support" icon={LifeBuoy} label="Get Help" collapsed={collapsed} />
           </SidebarSection>
         )}
 
