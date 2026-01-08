@@ -23,6 +23,7 @@ interface PropertySettings {
   typing_indicator_min_ms: number;
   typing_indicator_max_ms: number;
   smart_typing_enabled: boolean;
+  typing_wpm: number;
   max_ai_messages_before_escalation: number;
   escalation_keywords: string[];
   auto_escalation_enabled: boolean;
@@ -47,6 +48,7 @@ const DEFAULT_SETTINGS: PropertySettings = {
   typing_indicator_min_ms: 1500,
   typing_indicator_max_ms: 3000,
   smart_typing_enabled: false,
+  typing_wpm: 90,
   max_ai_messages_before_escalation: 5,
   escalation_keywords: ['crisis', 'emergency', 'suicide', 'help me', 'urgent'],
   auto_escalation_enabled: true,
@@ -323,6 +325,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         typing_indicator_min_ms,
         typing_indicator_max_ms,
         smart_typing_enabled,
+        typing_wpm,
         max_ai_messages_before_escalation,
         escalation_keywords,
         auto_escalation_enabled,
@@ -344,6 +347,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         typing_indicator_min_ms: data.typing_indicator_min_ms ?? DEFAULT_SETTINGS.typing_indicator_min_ms,
         typing_indicator_max_ms: data.typing_indicator_max_ms ?? DEFAULT_SETTINGS.typing_indicator_max_ms,
         smart_typing_enabled: data.smart_typing_enabled ?? DEFAULT_SETTINGS.smart_typing_enabled,
+        typing_wpm: data.typing_wpm ?? DEFAULT_SETTINGS.typing_wpm,
         max_ai_messages_before_escalation: data.max_ai_messages_before_escalation ?? DEFAULT_SETTINGS.max_ai_messages_before_escalation,
         escalation_keywords: data.escalation_keywords ?? DEFAULT_SETTINGS.escalation_keywords,
         auto_escalation_enabled: data.auto_escalation_enabled ?? DEFAULT_SETTINGS.auto_escalation_enabled,
@@ -365,21 +369,11 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
 
   // Check for escalation keywords in message
   const checkForEscalationKeywords = useCallback((content: string): boolean => {
-    console.log('Checking escalation keywords:', {
-      auto_escalation_enabled: settings.auto_escalation_enabled,
-      keywords: settings.escalation_keywords,
-      content
-    });
-    if (!settings.auto_escalation_enabled) {
-      console.log('Auto escalation is disabled');
-      return false;
-    }
+    if (!settings.auto_escalation_enabled) return false;
     const lowerContent = content.toLowerCase();
-    const matched = settings.escalation_keywords.some(keyword => 
+    return settings.escalation_keywords.some(keyword => 
       lowerContent.includes(keyword.toLowerCase())
     );
-    console.log('Keyword match result:', matched);
-    return matched;
   }, [settings.auto_escalation_enabled, settings.escalation_keywords]);
 
   // Trigger escalation - silently escalate without announcing to visitor
@@ -719,10 +713,10 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     // Store current agent for this message (before cycling)
     const respondingAgent = currentAiAgent;
 
-    // Calculate typing time based on word count (average ~90 WPM = 1.5 words per second)
+    // Calculate typing time based on word count using configured WPM
     const calculateTypingTimeMs = (text: string): number => {
       const wordCount = text.trim().split(/\s+/).length;
-      const wordsPerSecond = 90 / 60; // 90 WPM
+      const wordsPerSecond = settings.typing_wpm / 60;
       return Math.ceil((wordCount / wordsPerSecond) * 1000);
     };
 
