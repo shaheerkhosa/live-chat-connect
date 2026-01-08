@@ -213,7 +213,16 @@ export const useConversations = () => {
     return true;
   };
 
-  const createProperty = async (name: string, domain: string) => {
+  const createProperty = async (
+    name: string,
+    domain: string,
+    options?: {
+      greeting?: string;
+      collectEmail?: boolean;
+      collectName?: boolean;
+      basePrompt?: string;
+    }
+  ) => {
     if (!user) return null;
 
     const { data, error } = await supabase
@@ -222,6 +231,10 @@ export const useConversations = () => {
         user_id: user.id,
         name,
         domain,
+        greeting: options?.greeting,
+        require_email_before_chat: options?.collectEmail,
+        require_name_before_chat: options?.collectName,
+        ai_base_prompt: options?.basePrompt,
       })
       .select()
       .single();
