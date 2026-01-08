@@ -40,6 +40,11 @@ export interface Visitor {
   location?: string;
   currentPage?: string;
   createdAt: Date;
+  addiction_history?: string;
+  drug_of_choice?: string;
+  treatment_interest?: string;
+  insurance_info?: string;
+  urgency_level?: string;
 }
 
 export interface Message {

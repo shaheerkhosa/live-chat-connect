@@ -28,6 +28,11 @@ export interface DbVisitor {
   location: string | null;
   current_page: string | null;
   created_at: string;
+  addiction_history: string | null;
+  drug_of_choice: string | null;
+  treatment_interest: string | null;
+  insurance_info: string | null;
+  urgency_level: string | null;
 }
 
 export interface DbMessage {
