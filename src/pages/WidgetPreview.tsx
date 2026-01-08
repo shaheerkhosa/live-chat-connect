@@ -64,6 +64,71 @@ const hexToHsl = (hex: string): string => {
   return `hsl(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`;
 };
 
+// Display Settings Card with Save button
+const DisplaySettingsCard = ({ 
+  greeting, 
+  setGreeting, 
+  extractedFont 
+}: { 
+  greeting: string; 
+  setGreeting: (value: string) => void; 
+  extractedFont: string | null;
+}) => {
+  const [localGreeting, setLocalGreeting] = useState(greeting);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    setLocalGreeting(greeting);
+    setHasChanges(false);
+  }, [greeting]);
+
+  const handleGreetingChange = (value: string) => {
+    setLocalGreeting(value);
+    setHasChanges(value !== greeting);
+  };
+
+  const handleSave = () => {
+    setGreeting(localGreeting);
+    setHasChanges(false);
+    toast.success('Display settings saved!');
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Display Settings</CardTitle>
+        <CardDescription>Configure how your widget appears to visitors</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="greeting">Welcome Message</Label>
+          <Input
+            id="greeting"
+            value={localGreeting}
+            onChange={(e) => handleGreetingChange(e.target.value)}
+            placeholder="Hi there! How can I help?"
+          />
+        </div>
+        {extractedFont && (
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <p className="text-xs text-muted-foreground">
+              <Sparkles className="h-3 w-3 inline mr-1" />
+              Detected font from your website: <span className="font-medium text-foreground">{extractedFont}</span>
+            </p>
+          </div>
+        )}
+        <Button 
+          onClick={handleSave} 
+          disabled={!hasChanges}
+          className="w-full"
+        >
+          Save Display Settings
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
 const WidgetPreview = () => {
   const { properties, loading, deleteProperty } = useConversations();
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | undefined>();
@@ -71,7 +136,6 @@ const WidgetPreview = () => {
   const [textColor, setTextColor] = useState('hsl(0, 0%, 100%)');
   const [borderColor, setBorderColor] = useState('hsl(0, 0%, 0%, 0.1)');
   const [widgetSize, setWidgetSize] = useState<'small' | 'medium' | 'large'>('medium');
-  const [agentName, setAgentName] = useState('Support Team');
   const [greeting, setGreeting] = useState("Hi there! 👋 How can I help you today?");
   const [copied, setCopied] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -178,7 +242,6 @@ const WidgetPreview = () => {
     borderColor: '${borderColor}',
     widgetSize: '${widgetSize}',
     borderRadius: ${borderRadius},
-    agentName: '${agentName}',
     greeting: '${greeting}'
   });
 </script>` : '// Select a property to generate embed code';
@@ -587,7 +650,6 @@ const WidgetPreview = () => {
                       borderColor={borderColor}
                       widgetSize={widgetSize}
                       borderRadius={borderRadius}
-                      agentName={agentName}
                       greeting={greeting}
                       isPreview={true}
                     />
@@ -597,40 +659,11 @@ const WidgetPreview = () => {
             </Card>
 
             {/* Display Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Display Settings</CardTitle>
-                <CardDescription>Configure how your widget appears to visitors</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="agentName">Display Name</Label>
-                  <Input
-                    id="agentName"
-                    value={agentName}
-                    onChange={(e) => setAgentName(e.target.value)}
-                    placeholder="Support Team"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="greeting">Welcome Message</Label>
-                  <Input
-                    id="greeting"
-                    value={greeting}
-                    onChange={(e) => setGreeting(e.target.value)}
-                    placeholder="Hi there! How can I help?"
-                  />
-                </div>
-                {extractedFont && (
-                  <div className="p-3 bg-muted/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground">
-                      <Sparkles className="h-3 w-3 inline mr-1" />
-                      Detected font from your website: <span className="font-medium text-foreground">{extractedFont}</span>
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <DisplaySettingsCard
+              greeting={greeting}
+              setGreeting={setGreeting}
+              extractedFont={extractedFont}
+            />
           </div>
         </div>
 
@@ -709,7 +742,6 @@ const WidgetPreview = () => {
                       borderColor={borderColor}
                       widgetSize={widgetSize}
                       borderRadius={borderRadius}
-                      agentName={agentName}
                       greeting={greeting}
                       isPreview={true}
                     />
