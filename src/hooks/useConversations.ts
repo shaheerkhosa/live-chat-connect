@@ -220,6 +220,7 @@ export const useConversations = () => {
       greeting?: string;
       collectEmail?: boolean;
       collectName?: boolean;
+      collectPhone?: boolean;
       basePrompt?: string;
     }
   ) => {
@@ -234,6 +235,7 @@ export const useConversations = () => {
         greeting: options?.greeting,
         require_email_before_chat: options?.collectEmail,
         require_name_before_chat: options?.collectName,
+        require_phone_before_chat: options?.collectPhone,
         ai_base_prompt: options?.basePrompt,
       })
       .select()
