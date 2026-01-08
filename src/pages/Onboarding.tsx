@@ -319,31 +319,43 @@ Avoid em dashes, semicolons, and starting too many sentences with "I". Skip jarg
           {step === 3 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="text-center space-y-2">
-                <h1 className="text-2xl font-semibold text-foreground">Collect visitor info before chat?</h1>
-                <p className="text-muted-foreground">Ask visitors for their details upfront</p>
+                <h1 className="text-2xl font-semibold text-foreground">Collect visitor info</h1>
+                <p className="text-muted-foreground">
+                  Details like name, email, and phone are <span className="text-foreground font-medium">automatically extracted</span> when visitors share them naturally in conversation.
+                </p>
+              </div>
+
+              <div className="bg-muted/50 rounded-lg p-4 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Want to collect info <span className="text-foreground">upfront</span> before the chat starts? Enable these options:
+                </p>
               </div>
               
               <div className="space-y-3">
                 <ToggleCard
                   title="Ask for email"
-                  description="Recommended for follow-ups"
+                  description="Required before chat starts"
                   checked={data.collectEmail}
                   onChange={(checked) => setData({ ...data, collectEmail: checked })}
                   recommended
                 />
                 <ToggleCard
                   title="Ask for name"
-                  description="Personalize the conversation"
+                  description="Required before chat starts"
                   checked={data.collectName}
                   onChange={(checked) => setData({ ...data, collectName: checked })}
                 />
                 <ToggleCard
                   title="Ask for phone"
-                  description="Enable direct outreach"
+                  description="Required before chat starts"
                   checked={data.collectPhone}
                   onChange={(checked) => setData({ ...data, collectPhone: checked })}
                 />
               </div>
+
+              <p className="text-xs text-muted-foreground text-center">
+                Treatment details like substance, insurance, and urgency are always extracted automatically from conversations.
+              </p>
 
               <div className="space-y-3">
                 <Button onClick={nextStep} className="w-full h-12">
@@ -357,7 +369,7 @@ Avoid em dashes, semicolons, and starting too many sentences with "I". Skip jarg
                   }}
                   className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Skip, don't collect info
+                  Skip, just extract from conversation
                 </button>
               </div>
             </div>
