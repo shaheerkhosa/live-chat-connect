@@ -36,6 +36,7 @@ interface PropertySettings {
   typing_indicator_min_ms: number;
   typing_indicator_max_ms: number;
   smart_typing_enabled: boolean;
+  typing_wpm: number;
   max_ai_messages_before_escalation: number;
   escalation_keywords: string[];
   auto_escalation_enabled: boolean;
@@ -139,6 +140,7 @@ const AISupport = () => {
         typing_indicator_min_ms: data.typing_indicator_min_ms ?? 1500,
         typing_indicator_max_ms: data.typing_indicator_max_ms ?? 3000,
         smart_typing_enabled: data.smart_typing_enabled ?? false,
+        typing_wpm: data.typing_wpm ?? 90,
         max_ai_messages_before_escalation: data.max_ai_messages_before_escalation ?? 5,
         escalation_keywords: data.escalation_keywords ?? ['crisis', 'emergency', 'suicide', 'help me', 'urgent'],
         auto_escalation_enabled: data.auto_escalation_enabled ?? true,
@@ -387,6 +389,7 @@ const AISupport = () => {
         typing_indicator_min_ms: settings.typing_indicator_min_ms,
         typing_indicator_max_ms: settings.typing_indicator_max_ms,
         smart_typing_enabled: settings.smart_typing_enabled,
+        typing_wpm: settings.typing_wpm,
         max_ai_messages_before_escalation: settings.max_ai_messages_before_escalation,
         escalation_keywords: settings.escalation_keywords,
         auto_escalation_enabled: settings.auto_escalation_enabled,
@@ -756,9 +759,27 @@ const AISupport = () => {
                       minStepsBetweenThumbs={1}
                     />
                     {settings.smart_typing_enabled && (
-                      <p className="text-xs text-muted-foreground">
-                        Uses ~40 WPM average typing speed. If calculated time is less than minimum, minimum is used.
-                      </p>
+                      <>
+                        <div className="flex items-center justify-between mt-4">
+                          <Label>Typing Speed</Label>
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {settings.typing_wpm} WPM
+                          </span>
+                        </div>
+                        <Slider
+                          value={[settings.typing_wpm]}
+                          onValueChange={([val]) => setSettings({
+                            ...settings,
+                            typing_wpm: val,
+                          })}
+                          min={90}
+                          max={150}
+                          step={5}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Typing speed used to calculate response reveal time. If calculated time is less than minimum, minimum is used.
+                        </p>
+                      </>
                     )}
                   </div>
                 </CardContent>

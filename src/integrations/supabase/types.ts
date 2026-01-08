@@ -353,6 +353,7 @@ export type Database = {
           smart_typing_enabled: boolean | null
           typing_indicator_max_ms: number | null
           typing_indicator_min_ms: number | null
+          typing_wpm: number | null
           updated_at: string
           user_id: string
           widget_color: string | null
@@ -379,6 +380,7 @@ export type Database = {
           smart_typing_enabled?: boolean | null
           typing_indicator_max_ms?: number | null
           typing_indicator_min_ms?: number | null
+          typing_wpm?: number | null
           updated_at?: string
           user_id: string
           widget_color?: string | null
@@ -405,6 +407,7 @@ export type Database = {
           smart_typing_enabled?: boolean | null
           typing_indicator_max_ms?: number | null
           typing_indicator_min_ms?: number | null
+          typing_wpm?: number | null
           updated_at?: string
           user_id?: string
           widget_color?: string | null
