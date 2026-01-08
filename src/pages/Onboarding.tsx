@@ -18,7 +18,8 @@ interface OnboardingData {
   collectEmail: boolean;
   collectName: boolean;
   collectPhone: boolean;
-  aiTone: 'friendly' | 'hopeful' | 'caring' | null;
+  aiTone: 'friendly' | 'hopeful' | 'caring' | 'custom' | null;
+  customPersonality: string;
   agentName: string;
   agentAvatarUrl: string | null;
 }
@@ -97,6 +98,7 @@ const Onboarding = () => {
     collectName: false,
     collectPhone: false,
     aiTone: null,
+    customPersonality: '',
     agentName: '',
     agentAvatarUrl: null,
   });
@@ -124,12 +126,27 @@ const Onboarding = () => {
     setIsCreating(true);
     const domain = extractDomain(data.websiteUrl);
     
+    // Determine the base prompt to use
+    let basePrompt: string | undefined;
+    if (data.aiTone === 'custom' && data.customPersonality.trim()) {
+      // Wrap custom personality with human-like writing guidelines
+      basePrompt = `${data.customPersonality.trim()}
+
+Write naturally like a real person. Use contractions, vary sentence lengths. Some short. Some longer.
+
+Never reveal that you're an AI, chatbot, or automated system. You're simply a member of the support team.
+
+Avoid em dashes, semicolons, and starting too many sentences with "I". Skip jargon and therapy-speak.`;
+    } else if (data.aiTone && data.aiTone !== 'custom') {
+      basePrompt = aiTonePrompts[data.aiTone];
+    }
+    
     const property = await createProperty(domain, domain, {
       greeting: data.greeting,
       collectEmail: data.collectEmail,
       collectName: data.collectName,
       collectPhone: data.collectPhone,
-      basePrompt: data.aiTone ? aiTonePrompts[data.aiTone] : undefined,
+      basePrompt,
     });
     
     setIsCreating(false);
@@ -398,13 +415,14 @@ const Onboarding = () => {
               />
 
               {/* Personality selection */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <p className="text-sm text-muted-foreground text-center">Choose a personality</p>
                 <div className="space-y-3">
                   {[
                     { value: 'friendly' as const, title: 'Friendly', description: 'Warm and conversational' },
                     { value: 'hopeful' as const, title: 'Hopeful', description: 'Encouraging and uplifting' },
                     { value: 'caring' as const, title: 'Caring', description: 'Empathetic and supportive' },
+                    { value: 'custom' as const, title: 'Custom', description: 'Write your own personality traits' },
                   ].map((tone) => (
                     <ToneCard
                       key={tone.value}
@@ -415,6 +433,18 @@ const Onboarding = () => {
                     />
                   ))}
                 </div>
+
+                {/* Custom personality textarea */}
+                {data.aiTone === 'custom' && (
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                    <Textarea
+                      value={data.customPersonality}
+                      onChange={(e) => setData({ ...data, customPersonality: e.target.value })}
+                      placeholder="Describe how your AI should communicate. E.g., 'Speak gently and use simple language. Be patient and never rush. Use phrases like 'take your time' and 'you're doing great.''"
+                      className="min-h-[100px] text-sm"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3">
