@@ -686,21 +686,23 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     
     conversationHistory.push({ role: 'user', content });
 
-    // Apply typing indicator delay
-    const typingDuration = randomInRange(
-      settings.typing_indicator_min_ms,
-      settings.typing_indicator_max_ms
-    );
-    
-    setIsTyping(true);
-    await sleep(typingDuration);
-
-    // Apply response delay
+    // Apply response delay BEFORE showing typing indicator
+    // This simulates the agent "reading" the message before they start typing
     const responseDelay = randomInRange(
       settings.ai_response_delay_min_ms,
       settings.ai_response_delay_max_ms
     );
     await sleep(responseDelay);
+
+    // Now show typing indicator
+    setIsTyping(true);
+    
+    // Apply typing indicator duration (how long they "type" before response appears)
+    const typingDuration = randomInRange(
+      settings.typing_indicator_min_ms,
+      settings.typing_indicator_max_ms
+    );
+    await sleep(typingDuration);
 
     // Create placeholder for AI response
     const aiMessageId = `ai-${Date.now()}`;
