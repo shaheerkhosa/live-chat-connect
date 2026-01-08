@@ -850,6 +850,12 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
       });
     }
 
+    // Extract visitor info in background after each AI response (works in all modes)
+    // This allows us to capture details as they're shared naturally in conversation
+    if (visitorId && conversationHistory.length >= 2) {
+      extractVisitorInfo(visitorId, conversationHistory);
+    }
+
     // If connected to a real property (not preview mode), also save to database
     if (propertyId && propertyId !== 'demo' && !isPreview && visitorId) {
       let currentConversationId = conversationId;
@@ -893,12 +899,6 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
               sender_type: 'agent',
               content: aiContent,
             });
-        }
-        
-        // Extract visitor info in background after each AI response
-        // This allows us to capture details as they're shared naturally in conversation
-        if (conversationHistory.length >= 2) {
-          extractVisitorInfo(visitorId, conversationHistory);
         }
       }
     }
