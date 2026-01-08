@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
-import { Send, MoreVertical, User, Globe, Monitor, MapPin, Archive, UserPlus, Video, Phone, Briefcase, Calendar, Mail, ChevronRight, ChevronLeft, MessageSquare } from 'lucide-react';
+import { Send, MoreVertical, User, Globe, Monitor, MapPin, Archive, UserPlus, Video, Phone, Briefcase, Calendar, Mail, ChevronRight, ChevronLeft, MessageSquare, Heart, Pill, Building, Shield, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Conversation, Message } from '@/types/chat';
 import { Button } from '@/components/ui/button';
@@ -90,6 +90,22 @@ const InfoItem = ({ icon: Icon, label, value }: { icon: React.ElementType; label
 const VisitorInfoSidebar = ({ visitor, assignedAgent }: { visitor: any; assignedAgent: any }) => {
   const [isOpen, setIsOpen] = useState(true);
 
+  // Check if we have any treatment-specific info
+  const hasTreatmentInfo = visitor.addiction_history || visitor.drug_of_choice || 
+    visitor.treatment_interest || visitor.insurance_info || visitor.urgency_level;
+
+  // Determine urgency badge color
+  const getUrgencyBadge = (urgency: string) => {
+    const urgencyLower = urgency.toLowerCase();
+    if (urgencyLower.includes('crisis') || urgencyLower.includes('immediate')) {
+      return <Badge variant="destructive" className="text-xs">{urgency}</Badge>;
+    }
+    if (urgencyLower.includes('ready') || urgencyLower.includes('start')) {
+      return <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-400 text-xs">{urgency}</Badge>;
+    }
+    return <Badge variant="secondary" className="text-xs">{urgency}</Badge>;
+  };
+
   return (
     <div className={cn(
       "border-l border-border bg-card/80 backdrop-blur-sm hidden lg:flex flex-col transition-all duration-200",
@@ -118,6 +134,7 @@ const VisitorInfoSidebar = ({ visitor, assignedAgent }: { visitor: any; assigned
             </p>
           </div>
 
+          {/* Personal Info Section */}
           <div className="p-3 space-y-1">
             {visitor.name && (
               <InfoItem icon={User} label="Name" value={visitor.name} />
@@ -134,6 +151,40 @@ const VisitorInfoSidebar = ({ visitor, assignedAgent }: { visitor: any; assigned
             {visitor.occupation && (
               <InfoItem icon={Briefcase} label="Work" value={visitor.occupation} />
             )}
+          </div>
+
+          {/* Treatment Details Section */}
+          {hasTreatmentInfo && (
+            <div className="p-3 border-t border-border space-y-1">
+              <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                <Heart className="h-3 w-3" />
+                Treatment Details
+              </p>
+              {visitor.drug_of_choice && (
+                <InfoItem icon={Pill} label="Substance" value={visitor.drug_of_choice} />
+              )}
+              {visitor.addiction_history && (
+                <InfoItem icon={Calendar} label="History" value={visitor.addiction_history} />
+              )}
+              {visitor.treatment_interest && (
+                <InfoItem icon={Building} label="Seeking" value={visitor.treatment_interest} />
+              )}
+              {visitor.insurance_info && (
+                <InfoItem icon={Shield} label="Insurance" value={visitor.insurance_info} />
+              )}
+              {visitor.urgency_level && (
+                <div className="flex items-center gap-2 py-1.5">
+                  <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                  <span className="text-xs text-muted-foreground min-w-[50px]">Urgency:</span>
+                  {getUrgencyBadge(visitor.urgency_level)}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Session Info Section */}
+          <div className="p-3 border-t border-border space-y-1">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Session Info</p>
             {visitor.location && (
               <InfoItem icon={MapPin} label="Location" value={visitor.location} />
             )}

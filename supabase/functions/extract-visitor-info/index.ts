@@ -12,6 +12,11 @@ interface ExtractedInfo {
   phone?: string;
   age?: string;
   occupation?: string;
+  addiction_history?: string;
+  drug_of_choice?: string;
+  treatment_interest?: string;
+  insurance_info?: string;
+  urgency_level?: string;
 }
 
 serve(async (req) => {
@@ -44,7 +49,7 @@ serve(async (req) => {
     // Get current visitor data
     const { data: visitor } = await supabase
       .from('visitors')
-      .select('name, email, phone, age, occupation')
+      .select('name, email, phone, age, occupation, addiction_history, drug_of_choice, treatment_interest, insurance_info, urgency_level')
       .eq('id', visitorId)
       .single();
 
@@ -100,6 +105,26 @@ serve(async (req) => {
                   occupation: {
                     type: 'string',
                     description: 'The visitor\'s job, profession, or occupation if mentioned'
+                  },
+                  addiction_history: {
+                    type: 'string',
+                    description: 'Any mention of past or current substance use, addiction history, how long they have been struggling, or relapse history'
+                  },
+                  drug_of_choice: {
+                    type: 'string',
+                    description: 'Specific substances mentioned like alcohol, opioids, heroin, fentanyl, meth, cocaine, prescription pills, benzodiazepines, marijuana, etc.'
+                  },
+                  treatment_interest: {
+                    type: 'string',
+                    description: 'What type of treatment they are seeking: inpatient, outpatient, detox, residential, PHP, IOP, therapy, counseling, rehab'
+                  },
+                  insurance_info: {
+                    type: 'string',
+                    description: 'Insurance provider mentioned (Blue Cross, Aetna, Cigna, etc.), Medicaid, Medicare, self-pay, or concerns about payment/cost'
+                  },
+                  urgency_level: {
+                    type: 'string',
+                    description: 'How urgent their situation is: crisis/immediate need, ready to start treatment, planning for near future, or just researching options'
                   }
                 },
                 additionalProperties: false
@@ -153,6 +178,21 @@ serve(async (req) => {
     }
     if (extractedInfo.occupation && !visitor?.occupation) {
       updates.occupation = extractedInfo.occupation;
+    }
+    if (extractedInfo.addiction_history && !visitor?.addiction_history) {
+      updates.addiction_history = extractedInfo.addiction_history;
+    }
+    if (extractedInfo.drug_of_choice && !visitor?.drug_of_choice) {
+      updates.drug_of_choice = extractedInfo.drug_of_choice;
+    }
+    if (extractedInfo.treatment_interest && !visitor?.treatment_interest) {
+      updates.treatment_interest = extractedInfo.treatment_interest;
+    }
+    if (extractedInfo.insurance_info && !visitor?.insurance_info) {
+      updates.insurance_info = extractedInfo.insurance_info;
+    }
+    if (extractedInfo.urgency_level && !visitor?.urgency_level) {
+      updates.urgency_level = extractedInfo.urgency_level;
     }
 
     // Update visitor if we have new info

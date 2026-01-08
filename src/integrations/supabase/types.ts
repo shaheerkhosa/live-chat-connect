@@ -661,46 +661,61 @@ export type Database = {
       }
       visitors: {
         Row: {
+          addiction_history: string | null
           age: string | null
           browser_info: string | null
           created_at: string
           current_page: string | null
+          drug_of_choice: string | null
           email: string | null
           id: string
+          insurance_info: string | null
           location: string | null
           name: string | null
           occupation: string | null
           phone: string | null
           property_id: string
           session_id: string
+          treatment_interest: string | null
+          urgency_level: string | null
         }
         Insert: {
+          addiction_history?: string | null
           age?: string | null
           browser_info?: string | null
           created_at?: string
           current_page?: string | null
+          drug_of_choice?: string | null
           email?: string | null
           id?: string
+          insurance_info?: string | null
           location?: string | null
           name?: string | null
           occupation?: string | null
           phone?: string | null
           property_id: string
           session_id: string
+          treatment_interest?: string | null
+          urgency_level?: string | null
         }
         Update: {
+          addiction_history?: string | null
           age?: string | null
           browser_info?: string | null
           created_at?: string
           current_page?: string | null
+          drug_of_choice?: string | null
           email?: string | null
           id?: string
+          insurance_info?: string | null
           location?: string | null
           name?: string | null
           occupation?: string | null
           phone?: string | null
           property_id?: string
           session_id?: string
+          treatment_interest?: string | null
+          urgency_level?: string | null
         }
         Relationships: [
           {
