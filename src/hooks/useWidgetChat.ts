@@ -658,10 +658,10 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
       trackAnalyticsEvent(propertyId, 'chat_open');
     }
 
-    // Check for escalation keywords
+    // Check for escalation keywords - trigger escalation but continue AI response
     if (checkForEscalationKeywords(content)) {
       await triggerEscalation();
-      return;
+      // Don't return - let AI continue responding until human takes over
     }
 
     // Only stop AI if human has actually taken over (not just escalated)
