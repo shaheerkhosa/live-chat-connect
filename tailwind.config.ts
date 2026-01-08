@@ -16,6 +16,11 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
+      letterSpacing: {
+        tight: '-0.01em',
+        normal: '0.01em',
+        wide: '0.025em',
+      },
       spacing: {
         '18': '4.5rem',
         '22': '5.5rem',

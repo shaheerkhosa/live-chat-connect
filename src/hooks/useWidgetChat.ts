@@ -47,7 +47,7 @@ const DEFAULT_SETTINGS: PropertySettings = {
   ai_response_delay_max_ms: 2500,
   typing_indicator_min_ms: 1500,
   typing_indicator_max_ms: 3000,
-  smart_typing_enabled: false,
+  smart_typing_enabled: true,
   typing_wpm: 90,
   max_ai_messages_before_escalation: 5,
   escalation_keywords: ['crisis', 'emergency', 'suicide', 'help me', 'urgent'],
