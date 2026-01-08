@@ -69,55 +69,56 @@
   }
 
   .dark {
-    --background: 220 25% 12%;
+    /* Cleaner, deeper dark with subtle warmth */
+    --background: 220 15% 8%;
     --foreground: 210 20% 95%;
 
-    --card: 220 25% 15%;
+    --card: 220 15% 11%;
     --card-foreground: 210 20% 95%;
 
-    --popover: 220 25% 15%;
+    --popover: 220 15% 11%;
     --popover-foreground: 210 20% 95%;
 
     --primary: 174 45% 55%;
-    --primary-foreground: 220 25% 12%;
+    --primary-foreground: 220 15% 8%;
 
-    --secondary: 220 25% 20%;
+    --secondary: 220 15% 15%;
     --secondary-foreground: 210 20% 95%;
 
-    --muted: 220 25% 20%;
-    --muted-foreground: 210 15% 60%;
+    --muted: 220 15% 15%;
+    --muted-foreground: 210 15% 55%;
 
-    --accent: 158 25% 22%;
+    --accent: 158 20% 18%;
     --accent-foreground: 158 30% 85%;
 
     --destructive: 0 50% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 25% 22%;
-    --input: 220 25% 22%;
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
     --ring: 174 45% 55%;
 
     --chat-bubble-user: 174 45% 50%;
     --chat-bubble-user-foreground: 0 0% 100%;
-    --chat-bubble-visitor: 220 25% 22%;
+    --chat-bubble-visitor: 220 15% 16%;
     --chat-bubble-visitor-foreground: 210 20% 95%;
     --online: 158 45% 50%;
     --offline: 220 15% 45%;
     --away: 45 65% 55%;
 
-    --sidebar-background: 220 25% 14%;
+    --sidebar-background: 220 15% 9%;
     --sidebar-foreground: 210 20% 85%;
     --sidebar-primary: 174 45% 55%;
-    --sidebar-primary-foreground: 220 25% 12%;
-    --sidebar-accent: 174 30% 22%;
+    --sidebar-primary-foreground: 220 15% 8%;
+    --sidebar-accent: 174 25% 16%;
     --sidebar-accent-foreground: 174 40% 85%;
-    --sidebar-border: 220 25% 20%;
+    --sidebar-border: 220 15% 15%;
     --sidebar-ring: 174 45% 55%;
 
-    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.1);
-    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.15), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.2), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
-    --shadow-glow: 0 0 20px hsl(174 45% 55% / 0.25);
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.15);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.2), 0 2px 4px -2px hsl(0 0% 0% / 0.15);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.25), 0 4px 6px -4px hsl(0 0% 0% / 0.15);
+    --shadow-glow: 0 0 20px hsl(174 45% 55% / 0.2);
   }
 }
 
