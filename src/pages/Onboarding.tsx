@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, Loader2, Check } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Loader2, Check, Upload, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,18 +14,62 @@ type OnboardingStep = 1 | 2 | 3 | 4 | 'complete';
 interface OnboardingData {
   websiteUrl: string;
   greeting: string;
+  greetingPreset: string | null; // tracks which preset is selected, null = custom
   collectEmail: boolean;
   collectName: boolean;
   collectPhone: boolean;
   aiTone: 'friendly' | 'hopeful' | 'caring' | null;
+  agentName: string;
+  agentAvatarUrl: string | null;
 }
 
-const defaultGreeting = "You've taken a brave first step. We're here to help — how can we support you today?";
+const greetingPresets = [
+  { label: 'Hopeful', value: "You've taken a brave first step. We're here to help. How can we support you today?" },
+  { label: 'Caring', value: "We're so glad you reached out. You're not alone in this. How can we help?" },
+  { label: 'Encouraging', value: "Recovery is possible, and it starts with a conversation. What's on your mind?" },
+];
+
+const defaultGreeting = greetingPresets[0].value;
 
 const aiTonePrompts = {
-  friendly: "You are a warm, conversational assistant. Use casual language, emojis occasionally, and make visitors feel like they're chatting with a helpful friend.",
-  hopeful: "You are an encouraging, hope-focused assistant. Emphasize that recovery is possible, celebrate the courage it takes to reach out, and gently guide visitors toward taking the next step.",
-  caring: "You are an empathetic, supportive assistant. Listen actively, acknowledge feelings, and respond with warmth and understanding.",
+  friendly: `You are a warm, conversational support assistant for a recovery center. Your job is to make visitors feel comfortable and gently guide them toward getting help.
+
+Keep your responses natural and human. Write like you talk. Use contractions, vary your sentence lengths, and don't be afraid of the occasional short sentence. Or a fragment.
+
+Some things to avoid:
+- Never use em dashes or semicolons
+- Don't start responses with "I" too often
+- Skip the corporate-speak and jargon
+- No bullet points unless someone asks for a list
+- Avoid phrases like "I understand" or "I hear you" repeatedly
+
+Be real. Be warm. Sometimes that means being brief. Other times you might share a bit more. Just... be human about it.`,
+
+  hopeful: `You are an encouraging, hope-focused support assistant for a recovery center. Your role is to remind visitors that recovery is possible and celebrate the courage it takes to reach out.
+
+Write like a real person. Mix up your sentence lengths. Some short. Others might run a little longer when you're making an important point about hope and healing.
+
+Things to avoid:
+- Em dashes and semicolons feel too formal
+- Don't overuse "I" at the start of sentences  
+- Skip the clinical language
+- No bullet lists in regular conversation
+- Vary how you show empathy, don't repeat the same phrases
+
+Focus on hope without being cheesy about it. Acknowledge the hard stuff too. Recovery isn't easy, but reaching out? That's huge. Let people know that.`,
+
+  caring: `You are an empathetic, supportive assistant for a recovery center. Your job is to listen, acknowledge feelings, and respond with genuine warmth.
+
+Sound human. Real humans don't always speak in perfect sentences. They use contractions. Short thoughts sometimes. Longer ones when something matters.
+
+Avoid these:
+- Em dashes and semicolons feel stiff
+- Starting too many sentences with "I"
+- Therapy-speak and buzzwords
+- Lists when someone just needs to be heard
+- Saying "I understand" over and over
+
+Be present. Sometimes the best response is simple. Other times you might reflect back what someone shared. Just don't sound like a chatbot, you know?`,
 };
 
 const Onboarding = () => {
@@ -35,13 +79,17 @@ const Onboarding = () => {
   
   const [step, setStep] = useState<OnboardingStep>(1);
   const [isCreating, setIsCreating] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [data, setData] = useState<OnboardingData>({
     websiteUrl: '',
     greeting: defaultGreeting,
+    greetingPreset: 'Hopeful',
     collectEmail: true,
     collectName: false,
     collectPhone: false,
     aiTone: null,
+    agentName: '',
+    agentAvatarUrl: null,
   });
 
   const isValidDomain = (input: string) => {
@@ -199,22 +247,26 @@ const Onboarding = () => {
               
               <Textarea
                 value={data.greeting}
-                onChange={(e) => setData({ ...data, greeting: e.target.value })}
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  const matchingPreset = greetingPresets.find(p => p.value === newValue);
+                  setData({ 
+                    ...data, 
+                    greeting: newValue,
+                    greetingPreset: matchingPreset ? matchingPreset.label : null
+                  });
+                }}
                 className="min-h-[100px] text-base"
                 placeholder="Hi there! How can we help you today?"
               />
 
               <div className="flex flex-wrap gap-2 justify-center">
-                {[
-                  { label: 'Hopeful', value: "You've taken a brave first step. We're here to help — how can we support you today?" },
-                  { label: 'Caring', value: "We're so glad you reached out. You're not alone in this. How can we help?" },
-                  { label: 'Encouraging', value: "Recovery is possible, and it starts with a conversation. What's on your mind?" },
-                ].map((preset) => (
+                {[...greetingPresets, ...(data.greetingPreset === null ? [{ label: 'Custom', value: data.greeting }] : [])].map((preset) => (
                   <Button
                     key={preset.label}
-                    variant="outline"
+                    variant={data.greetingPreset === preset.label || (preset.label === 'Custom' && data.greetingPreset === null) ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setData({ ...data, greeting: preset.value })}
+                    onClick={() => setData({ ...data, greeting: preset.value, greetingPreset: preset.label === 'Custom' ? null : preset.label })}
                     className="text-xs"
                   >
                     {preset.label}
@@ -285,28 +337,75 @@ const Onboarding = () => {
             </div>
           )}
 
-          {/* Step 4: AI Tone */}
+          {/* Step 4: Create Your AI Persona */}
           {step === 4 && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="text-center space-y-2">
-                <h1 className="text-2xl font-semibold text-foreground">How should your AI sound?</h1>
-                <p className="text-muted-foreground">Pick a personality for your assistant</p>
+                <h1 className="text-2xl font-semibold text-foreground">Create your AI persona</h1>
+                <p className="text-muted-foreground">Give your assistant a name and personality</p>
               </div>
-              
-              <div className="space-y-3">
-                {[
-                  { value: 'friendly' as const, title: 'Friendly', description: 'Warm and conversational' },
-                  { value: 'hopeful' as const, title: 'Hopeful', description: 'Encouraging and uplifting' },
-                  { value: 'caring' as const, title: 'Caring', description: 'Empathetic and supportive' },
-                ].map((tone) => (
-                  <ToneCard
-                    key={tone.value}
-                    title={tone.title}
-                    description={tone.description}
-                    selected={data.aiTone === tone.value}
-                    onClick={() => setData({ ...data, aiTone: tone.value })}
-                  />
-                ))}
+
+              {/* Avatar upload */}
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className={cn(
+                    "w-20 h-20 rounded-full border-2 border-dashed flex items-center justify-center transition-all overflow-hidden",
+                    data.agentAvatarUrl ? "border-primary" : "border-muted-foreground/30 hover:border-muted-foreground/50"
+                  )}
+                >
+                  {data.agentAvatarUrl ? (
+                    <img src={data.agentAvatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-center">
+                      <User className="h-6 w-6 mx-auto text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground mt-1 block">Add photo</span>
+                    </div>
+                  )}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const url = URL.createObjectURL(file);
+                      setData({ ...data, agentAvatarUrl: url });
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Agent name */}
+              <Input
+                type="text"
+                placeholder="Assistant name (e.g., Hope, Alex)"
+                value={data.agentName}
+                onChange={(e) => setData({ ...data, agentName: e.target.value })}
+                className="h-12 text-center"
+              />
+
+              {/* Personality selection */}
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground text-center">Choose a personality</p>
+                <div className="space-y-3">
+                  {[
+                    { value: 'friendly' as const, title: 'Friendly', description: 'Warm and conversational' },
+                    { value: 'hopeful' as const, title: 'Hopeful', description: 'Encouraging and uplifting' },
+                    { value: 'caring' as const, title: 'Caring', description: 'Empathetic and supportive' },
+                  ].map((tone) => (
+                    <ToneCard
+                      key={tone.value}
+                      title={tone.title}
+                      description={tone.description}
+                      selected={data.aiTone === tone.value}
+                      onClick={() => setData({ ...data, aiTone: tone.value })}
+                    />
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-3">
@@ -328,7 +427,7 @@ const Onboarding = () => {
                   disabled={isCreating}
                   className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                 >
-                  Skip, use default
+                  Skip, use defaults
                 </button>
               </div>
             </div>
