@@ -44,6 +44,16 @@ const Onboarding = () => {
     aiTone: null,
   });
 
+  const isValidDomain = (input: string) => {
+    const trimmed = input.trim();
+    if (!trimmed) return false;
+    // Basic domain pattern: word.word (with optional subdomains)
+    const domainRegex = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+    // Remove protocol and path for validation
+    const cleaned = trimmed.replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '');
+    return domainRegex.test(cleaned);
+  };
+
   const extractDomain = (url: string) => {
     try {
       const parsed = new URL(url.startsWith('http') ? url : `https://${url}`);
@@ -149,19 +159,27 @@ const Onboarding = () => {
                 <p className="text-muted-foreground">We'll set up your chat widget for this domain</p>
               </div>
               
-              <Input
-                type="text"
-                placeholder="yourwebsite.com"
-                value={data.websiteUrl}
-                onChange={(e) => setData({ ...data, websiteUrl: e.target.value })}
-                className="h-12 text-center text-lg"
-                autoFocus
-              />
+              <div className="space-y-2">
+                <Input
+                  type="text"
+                  placeholder="yourwebsite.com"
+                  value={data.websiteUrl}
+                  onChange={(e) => setData({ ...data, websiteUrl: e.target.value })}
+                  className={cn(
+                    "h-12 text-center text-lg",
+                    data.websiteUrl.trim() && !isValidDomain(data.websiteUrl) && "border-destructive focus-visible:ring-destructive"
+                  )}
+                  autoFocus
+                />
+                {data.websiteUrl.trim() && !isValidDomain(data.websiteUrl) && (
+                  <p className="text-sm text-destructive text-center">Please enter a valid domain (e.g., example.com)</p>
+                )}
+              </div>
 
               <div className="space-y-3">
                 <Button
                   onClick={nextStep}
-                  disabled={!data.websiteUrl.trim()}
+                  disabled={!isValidDomain(data.websiteUrl)}
                   className="w-full h-12"
                 >
                   Continue
