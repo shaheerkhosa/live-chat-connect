@@ -37,7 +37,7 @@ const ConversationItem = ({ conversation, isSelected, onClick, showDelete, onDel
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { visitor, lastMessage, unreadCount, status } = conversation;
   const isTest = (conversation as any).isTest;
-  const visitorName = isTest ? 'Test Visitor' : (visitor.name || `Visitor ${visitor.sessionId.slice(-4)}`);
+  const visitorName = visitor.name || (isTest ? 'Test Visitor' : `Visitor ${visitor.sessionId.slice(-4)}`);
   const initials = visitorName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
