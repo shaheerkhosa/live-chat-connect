@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,14 +16,15 @@ interface OnboardingData {
   greeting: string;
   collectEmail: boolean;
   collectName: boolean;
-  aiTone: 'friendly' | 'professional' | 'caring' | null;
+  collectPhone: boolean;
+  aiTone: 'friendly' | 'hopeful' | 'caring' | null;
 }
 
 const defaultGreeting = "Hi there! How can we help you today?";
 
 const aiTonePrompts = {
   friendly: "You are a warm, conversational assistant. Use casual language, emojis occasionally, and make visitors feel like they're chatting with a helpful friend.",
-  professional: "You are a professional, business-like assistant. Use clear, concise language and maintain a polished, courteous tone throughout conversations.",
+  hopeful: "You are an encouraging, hope-focused assistant. Emphasize that recovery is possible, celebrate the courage it takes to reach out, and gently guide visitors toward taking the next step.",
   caring: "You are an empathetic, supportive assistant. Listen actively, acknowledge feelings, and respond with warmth and understanding.",
 };
 
@@ -39,6 +40,7 @@ const Onboarding = () => {
     greeting: defaultGreeting,
     collectEmail: true,
     collectName: false,
+    collectPhone: false,
     aiTone: null,
   });
 
@@ -59,6 +61,7 @@ const Onboarding = () => {
       greeting: data.greeting,
       collectEmail: data.collectEmail,
       collectName: data.collectName,
+      collectPhone: data.collectPhone,
       basePrompt: data.aiTone ? aiTonePrompts[data.aiTone] : undefined,
     });
     
@@ -87,11 +90,15 @@ const Onboarding = () => {
     handleComplete();
   };
 
+  // Allow skipping redirect if ?dev=1 is in URL (for testing)
+  const [searchParams] = useSearchParams();
+  const isDevMode = searchParams.get('dev') === '1';
+
   useEffect(() => {
-    if (!authLoading && user && !dataLoading && properties.length > 0) {
+    if (!isDevMode && !authLoading && user && !dataLoading && properties.length > 0) {
       navigate('/dashboard', { replace: true });
     }
-  }, [authLoading, user, dataLoading, properties.length, navigate]);
+  }, [authLoading, user, dataLoading, properties.length, navigate, isDevMode]);
 
   if (authLoading || dataLoading) {
     return (
@@ -234,6 +241,12 @@ const Onboarding = () => {
                   checked={data.collectName}
                   onChange={(checked) => setData({ ...data, collectName: checked })}
                 />
+                <ToggleCard
+                  title="Ask for phone"
+                  description="Enable direct outreach"
+                  checked={data.collectPhone}
+                  onChange={(checked) => setData({ ...data, collectPhone: checked })}
+                />
               </div>
 
               <div className="space-y-3">
@@ -243,7 +256,7 @@ const Onboarding = () => {
                 </Button>
                 <button
                   onClick={() => {
-                    setData({ ...data, collectEmail: false, collectName: false });
+                    setData({ ...data, collectEmail: false, collectName: false, collectPhone: false });
                     nextStep();
                   }}
                   className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -265,7 +278,7 @@ const Onboarding = () => {
               <div className="space-y-3">
                 {[
                   { value: 'friendly' as const, title: 'Friendly', description: 'Warm and conversational' },
-                  { value: 'professional' as const, title: 'Professional', description: 'Clear and business-like' },
+                  { value: 'hopeful' as const, title: 'Hopeful', description: 'Encouraging and uplifting' },
                   { value: 'caring' as const, title: 'Caring', description: 'Empathetic and supportive' },
                 ].map((tone) => (
                   <ToneCard
