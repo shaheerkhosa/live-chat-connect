@@ -196,7 +196,9 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
 
     setConnecting(true);
     try {
-      const redirectUri = `${window.location.origin}/salesforce-callback`;
+      // Use the deployed app URL, not the editor URL
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const redirectUri = `https://${projectId}.lovable.app/salesforce-callback`;
       
       const response = await fetch(OAUTH_START_URL, {
         method: 'POST',
