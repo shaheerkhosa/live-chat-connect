@@ -106,6 +106,22 @@ const sleep = (ms: number): Promise<void> => {
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-ai`;
 const TRACK_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-page-analytics`;
 const EXTRACT_INFO_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-visitor-info`;
+const LOCATION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-visitor-location`;
+
+const fetchVisitorLocation = async (visitorId: string) => {
+  try {
+    await fetch(LOCATION_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ visitorId }),
+    });
+  } catch (error) {
+    console.error('Failed to fetch visitor location:', error);
+  }
+};
 
 const extractVisitorInfo = async (
   visitorId: string,
@@ -559,6 +575,9 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         return;
       }
       visitor = newVisitor;
+      
+      // Fetch geolocation for new visitor (non-blocking)
+      fetchVisitorLocation(visitor.id);
     } else {
       // Update current page
       await supabase
