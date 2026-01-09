@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Link2, Unlink, Save, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Save, Plus, Trash2, Unlink } from 'lucide-react';
 
 interface SalesforceSettingsProps {
   propertyId: string;
@@ -32,8 +31,6 @@ interface SalesforceConfig {
   auto_export_on_escalation: boolean;
   auto_export_on_conversation_end: boolean;
   field_mappings: Record<string, string>;
-  client_id: string;
-  client_secret: string;
 }
 
 const SALESFORCE_LEAD_FIELDS = [
@@ -70,11 +67,29 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
   const [config, setConfig] = useState<SalesforceConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const [fieldMappings, setFieldMappings] = useState<FieldMapping[]>([]);
-  const [showClientSecret, setShowClientSecret] = useState(false);
+
+  // Listen for OAuth callback messages from popup
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'salesforce-oauth-success') {
+        toast.success(`Connected to Salesforce!`);
+        fetchSettings(); // Refresh settings
+        setConnecting(false);
+      } else if (event.data?.type === 'salesforce-oauth-error') {
+        toast.error(`Salesforce connection failed: ${event.data.error}`);
+        setConnecting(false);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   useEffect(() => {
     fetchSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId]);
 
   const fetchSettings = async () => {
@@ -100,8 +115,6 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
         auto_export_on_escalation: data.auto_export_on_escalation,
         auto_export_on_conversation_end: data.auto_export_on_conversation_end,
         field_mappings: data.field_mappings as Record<string, string>,
-        client_id: (data as any).client_id || '',
-        client_secret: (data as any).client_secret || '',
       });
       
       // Convert field_mappings object to array
@@ -113,7 +126,7 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
       );
       setFieldMappings(mappings);
     } else {
-      // No settings exist, create default
+      // No settings exist, set defaults
       setConfig(null);
       setFieldMappings([
         { salesforceField: 'FirstName', visitorField: 'name' },
@@ -142,8 +155,6 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
       auto_export_on_escalation: config?.auto_export_on_escalation ?? false,
       auto_export_on_conversation_end: config?.auto_export_on_conversation_end ?? false,
       field_mappings: mappingsObject,
-      client_id: config?.client_id || null,
-      client_secret: config?.client_secret || null,
     };
 
     let result;
@@ -173,12 +184,61 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
         ...settingsData,
         id: result.data.id,
         instance_url: null,
-        client_id: config?.client_id || '',
-        client_secret: config?.client_secret || '',
       });
     }
 
     toast.success('Salesforce settings saved');
+  };
+
+  const handleConnectSalesforce = async () => {
+    setConnecting(true);
+
+    try {
+      // Call edge function to get OAuth URL
+      const { data, error } = await supabase.functions.invoke('salesforce-oauth-start', {
+        body: { propertyId },
+      });
+
+      if (error || !data?.url) {
+        console.error('Failed to get Salesforce OAuth URL:', error);
+        toast.error('Failed to start Salesforce connection');
+        setConnecting(false);
+        return;
+      }
+
+      // Open OAuth popup
+      window.open(data.url, '_blank', 'width=600,height=700');
+    } catch (err) {
+      console.error('Error connecting to Salesforce:', err);
+      toast.error('Failed to connect to Salesforce');
+      setConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!config?.id) return;
+
+    const { error } = await supabase
+      .from('salesforce_settings')
+      .update({
+        access_token: null,
+        refresh_token: null,
+        instance_url: null,
+        token_expires_at: null,
+      })
+      .eq('id', config.id);
+
+    if (error) {
+      toast.error('Failed to disconnect Salesforce');
+      return;
+    }
+
+    setConfig({
+      ...config,
+      instance_url: null,
+    });
+
+    toast.success('Salesforce disconnected');
   };
 
   const addMapping = () => {
@@ -198,6 +258,8 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
     updated[index] = { ...updated[index], [field]: value };
     setFieldMappings(updated);
   };
+
+  const isConnected = !!config?.instance_url;
 
   if (loading) {
     return (
@@ -219,92 +281,40 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
                 Connect your Salesforce account to export leads
               </CardDescription>
             </div>
-            <Badge variant={config?.instance_url ? 'default' : 'secondary'}>
-              {config?.instance_url ? 'Connected' : 'Not Connected'}
+            <Badge variant={isConnected ? 'default' : 'secondary'}>
+              {isConnected ? 'Connected' : 'Not Connected'}
             </Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* OAuth Credentials */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="client_id">Client ID</Label>
-              <Input
-                id="client_id"
-                type="text"
-                placeholder="Enter your Salesforce Connected App Client ID"
-                value={config?.client_id || ''}
-                onChange={(e) => setConfig(prev => prev ? { ...prev, client_id: e.target.value } : {
-                  id: '',
-                  enabled: false,
-                  instance_url: null,
-                  auto_export_on_escalation: false,
-                  auto_export_on_conversation_end: false,
-                  field_mappings: {},
-                  client_id: e.target.value,
-                  client_secret: '',
-                })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="client_secret">Client Secret</Label>
-              <div className="relative">
-                <Input
-                  id="client_secret"
-                  type={showClientSecret ? 'text' : 'password'}
-                  placeholder="Enter your Salesforce Connected App Client Secret"
-                  value={config?.client_secret || ''}
-                  onChange={(e) => setConfig(prev => prev ? { ...prev, client_secret: e.target.value } : {
-                    id: '',
-                    enabled: false,
-                    instance_url: null,
-                    auto_export_on_escalation: false,
-                    auto_export_on_conversation_end: false,
-                    field_mappings: {},
-                    client_id: '',
-                    client_secret: e.target.value,
-                  })}
-                  className="pr-10"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                  onClick={() => setShowClientSecret(!showClientSecret)}
-                >
-                  {showClientSecret ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                You can find these in your Salesforce Connected App settings
-              </p>
-            </div>
-          </div>
-
           {/* Connection Status */}
-          {config?.instance_url ? (
+          {isConnected ? (
             <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
               <div>
                 <p className="font-medium">Connected to Salesforce</p>
-                <p className="text-sm text-muted-foreground">{config.instance_url}</p>
+                <p className="text-sm text-muted-foreground">{config?.instance_url}</p>
               </div>
-              <Button variant="outline" size="sm" className="text-destructive">
+              <Button variant="outline" size="sm" className="text-destructive" onClick={handleDisconnect}>
                 <Unlink className="mr-2 h-4 w-4" />
                 Disconnect
               </Button>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-4 py-4 border rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground text-center">
-                Enter your OAuth credentials above, save, then connect your account.
-              </p>
-              <Button disabled={!config?.client_id || !config?.client_secret}>
-                <Link2 className="mr-2 h-4 w-4" />
+            <div className="flex flex-col items-center gap-4 py-6 border rounded-lg bg-muted/50">
+              <div className="text-center">
+                <p className="font-medium mb-1">Connect to Salesforce</p>
+                <p className="text-sm text-muted-foreground">
+                  Click the button below to connect your Salesforce account
+                </p>
+              </div>
+              <Button onClick={handleConnectSalesforce} disabled={connecting}>
+                {connecting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M10.006 5.415a4.195 4.195 0 0 1 3.045-1.306c1.56 0 2.954.9 3.69 2.205.63-.3 1.35-.45 2.1-.45 2.85 0 5.159 2.34 5.159 5.22s-2.31 5.22-5.16 5.22h-.54c-.18 1.17-.54 2.19-1.08 3.06a4.74 4.74 0 0 1-4.02 2.16 4.86 4.86 0 0 1-4.8-4.02c-.21.03-.42.045-.63.045a4.47 4.47 0 0 1-4.47-4.5c0-1.65.9-3.09 2.22-3.87a6.12 6.12 0 0 1-.12-1.17c0-3.24 2.58-5.88 5.76-5.88 1.53 0 2.91.6 3.93 1.59l-.12-.27z"/>
+                  </svg>
+                )}
                 Connect Salesforce
               </Button>
             </div>
@@ -330,7 +340,14 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
             </div>
             <Switch
               checked={config?.auto_export_on_escalation ?? false}
-              onCheckedChange={(checked) => setConfig(prev => prev ? { ...prev, auto_export_on_escalation: checked } : null)}
+              onCheckedChange={(checked) => setConfig(prev => prev ? { ...prev, auto_export_on_escalation: checked } : {
+                id: '',
+                enabled: false,
+                instance_url: null,
+                auto_export_on_escalation: checked,
+                auto_export_on_conversation_end: false,
+                field_mappings: {},
+              })}
             />
           </div>
 
@@ -343,7 +360,14 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
             </div>
             <Switch
               checked={config?.auto_export_on_conversation_end ?? false}
-              onCheckedChange={(checked) => setConfig(prev => prev ? { ...prev, auto_export_on_conversation_end: checked } : null)}
+              onCheckedChange={(checked) => setConfig(prev => prev ? { ...prev, auto_export_on_conversation_end: checked } : {
+                id: '',
+                enabled: false,
+                instance_url: null,
+                auto_export_on_escalation: false,
+                auto_export_on_conversation_end: checked,
+                field_mappings: {},
+              })}
             />
           </div>
         </CardContent>
