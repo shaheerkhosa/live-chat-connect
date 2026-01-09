@@ -48,7 +48,7 @@
     --input: 210 25% 90%;
     --ring: 174 42% 51%;
 
-    --radius: 1rem;
+    --radius: 1.25rem;
 
     /* Chat specific - soft, approachable bubbles */
     --chat-bubble-user: 174 42% 51%;
@@ -183,13 +183,34 @@
     transform: translateY(-1px);
   }
 
+  /* Glassy effect utilities */
+  .glass {
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  .glass-subtle {
+    background: hsl(var(--card) / 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .glass-strong {
+    background: hsl(var(--card) / 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid hsl(var(--border) / 0.3);
+  }
+
   /* Subtle gradient backgrounds */
   .bg-gradient-subtle {
-    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted) / 0.5) 100%);
   }
 
   .bg-gradient-card {
-    background: linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.8) 100%);
+    background: linear-gradient(180deg, hsl(var(--card) / 0.9) 0%, hsl(var(--card) / 0.6) 100%);
   }
 
   /* Primary glow effect */

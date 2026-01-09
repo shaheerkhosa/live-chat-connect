@@ -51,8 +51,8 @@ const MessageBubble = ({ message, isAgent }: { message: Message; isAgent: boolea
     <div className={cn(
       "max-w-[70%] rounded-2xl px-4 py-2.5",
       isAgent 
-        ? "bg-chat-user text-chat-user-foreground rounded-br-md" 
-        : "bg-chat-visitor text-chat-visitor-foreground rounded-bl-md"
+        ? "bg-chat-user text-chat-user-foreground rounded-br-lg" 
+        : "bg-chat-visitor text-chat-visitor-foreground rounded-bl-lg"
     )}>
       <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
       <p className={cn(
@@ -123,7 +123,7 @@ const VisitorInfoSidebar = ({ visitor, assignedAgent }: { visitor: any; assigned
 
   return (
     <div className={cn(
-      "border-l border-border bg-card/80 backdrop-blur-sm hidden lg:flex flex-col transition-all duration-200",
+      "border-l border-border/50 hidden lg:flex flex-col transition-all duration-200 glass",
       isOpen ? "w-64" : "w-10"
     )}>
       <Collapsible open={isOpen} onOpenChange={setIsOpen} className="flex flex-col h-full">
@@ -312,7 +312,7 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
       {/* Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="h-16 px-4 flex items-center justify-between border-b border-border bg-card/90 backdrop-blur-sm">
+        <div className="h-16 px-4 flex items-center justify-between border-b border-border/50 glass-subtle rounded-t-xl">
           <div className="flex items-center gap-3 min-w-0">
             <Avatar className="h-10 w-10 flex-shrink-0">
               <AvatarFallback className="bg-primary/10 text-primary">
@@ -385,7 +385,7 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-border bg-card/90 backdrop-blur-sm">
+        <div className="p-4 border-t border-border/50 glass-subtle rounded-b-xl">
           <div className="flex gap-2">
             <Input
               ref={inputRef}

@@ -280,9 +280,9 @@ const DashboardContent = () => {
       
       <div className="flex-1 flex min-w-0">
         {/* Conversation List */}
-        <div className="w-80 border-r border-border flex flex-col bg-card/80 backdrop-blur-sm">
+        <div className="w-80 border-r border-border/50 flex flex-col glass">
           {/* Header */}
-          <div className="p-4 border-b border-border space-y-3 bg-gradient-card">
+          <div className="p-4 border-b border-border/50 space-y-3 bg-transparent">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-foreground">{getStatusTitle()}</h2>
               <div className="flex items-center gap-2">
