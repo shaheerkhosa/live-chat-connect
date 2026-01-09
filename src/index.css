@@ -145,6 +145,17 @@
 }
 
 @layer utilities {
+  /* Squircle shape - iOS-style super-ellipse */
+  .squircle {
+    border-radius: 22px;
+    mask-image: paint(squircle);
+    -webkit-mask-image: paint(squircle);
+    /* Fallback for browsers without paint worklet */
+    border-radius: 1.375rem;
+    /* Smooth continuous curve approximation */
+    clip-path: inset(0 round 1.375rem);
+  }
+
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;

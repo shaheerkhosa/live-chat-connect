@@ -38,7 +38,7 @@ const formatMessageTime = (date: Date) => {
 
 const MessageBubble = ({ message, isAgent }: { message: Message; isAgent: boolean }) => (
   <div className={cn(
-    "flex gap-2 message-enter",
+    "flex gap-3 message-enter",
     isAgent ? "flex-row-reverse" : "flex-row"
   )}>
     {!isAgent && (
@@ -49,14 +49,15 @@ const MessageBubble = ({ message, isAgent }: { message: Message; isAgent: boolea
       </Avatar>
     )}
     <div className={cn(
-      "max-w-[70%] rounded-2xl px-4 py-2.5",
+      "max-w-[70%] px-4 py-3",
+      "squircle",
       isAgent 
-        ? "bg-chat-user text-chat-user-foreground rounded-br-lg" 
-        : "bg-chat-visitor text-chat-visitor-foreground rounded-bl-lg"
+        ? "bg-chat-user text-chat-user-foreground" 
+        : "bg-chat-visitor text-chat-visitor-foreground"
     )}>
-      <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+      <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
       <p className={cn(
-        "text-xs mt-1",
+        "text-xs mt-1.5",
         isAgent ? "text-chat-user-foreground/70" : "text-muted-foreground"
       )}>
         {formatMessageTime(new Date(message.timestamp))}
