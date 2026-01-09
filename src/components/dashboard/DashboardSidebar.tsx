@@ -12,7 +12,8 @@ import {
   Inbox,
   Archive,
   FlaskConical,
-  LifeBuoy
+  LifeBuoy,
+  Bot
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -155,7 +156,7 @@ export const DashboardSidebar = () => {
         {(isClient || isAdmin) && (
           <SidebarSection title="Manage" collapsed={collapsed}>
             <SidebarItem to="/dashboard/team" icon={Users} label="Team Members" collapsed={collapsed} />
-            <SidebarItem to="/dashboard/ai-support" icon={MessageSquare} label="AI Support" collapsed={collapsed} />
+            <SidebarItem to="/dashboard/ai-support" icon={Bot} label="AI Support" collapsed={collapsed} />
             <SidebarItem to="/dashboard/analytics" icon={BarChart3} label="Analytics" collapsed={collapsed} />
           </SidebarSection>
         )}
