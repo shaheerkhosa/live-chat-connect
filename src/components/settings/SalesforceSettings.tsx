@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/select';
 import { Loader2, Link2, Unlink, Save, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
 
+const OAUTH_START_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/salesforce-oauth-start`;
+
 interface SalesforceSettingsProps {
   propertyId: string;
 }
@@ -70,6 +72,8 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
   const [config, setConfig] = useState<SalesforceConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
   const [fieldMappings, setFieldMappings] = useState<FieldMapping[]>([]);
   const [showClientSecret, setShowClientSecret] = useState(false);
 
@@ -179,6 +183,80 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
     }
 
     toast.success('Salesforce settings saved');
+  };
+
+  const handleConnect = async () => {
+    if (!config?.client_id || !config?.client_secret) {
+      toast.error('Please enter Client ID and Client Secret first');
+      return;
+    }
+
+    // First save the current settings
+    await handleSave();
+
+    setConnecting(true);
+    try {
+      const redirectUri = `${window.location.origin}/salesforce-callback`;
+      
+      const response = await fetch(OAUTH_START_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          propertyId,
+          redirectUri,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to start OAuth flow');
+      }
+
+      // Redirect to Salesforce authorization page
+      window.location.href = data.authUrl;
+    } catch (error) {
+      console.error('Error starting Salesforce OAuth:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to connect to Salesforce');
+      setConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!config?.id) return;
+
+    setDisconnecting(true);
+    try {
+      const { error } = await supabase
+        .from('salesforce_settings')
+        .update({
+          access_token: null,
+          refresh_token: null,
+          instance_url: null,
+          token_expires_at: null,
+          enabled: false,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', config.id);
+
+      if (error) throw error;
+
+      setConfig(prev => prev ? {
+        ...prev,
+        instance_url: null,
+        enabled: false,
+      } : null);
+
+      toast.success('Disconnected from Salesforce');
+    } catch (error) {
+      console.error('Error disconnecting Salesforce:', error);
+      toast.error('Failed to disconnect from Salesforce');
+    } finally {
+      setDisconnecting(false);
+    }
   };
 
   const addMapping = () => {
@@ -293,8 +371,18 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
                 <p className="font-medium">Connected to Salesforce</p>
                 <p className="text-sm text-muted-foreground">{config.instance_url}</p>
               </div>
-              <Button variant="outline" size="sm" className="text-destructive">
-                <Unlink className="mr-2 h-4 w-4" />
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-destructive"
+                onClick={handleDisconnect}
+                disabled={disconnecting}
+              >
+                {disconnecting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Unlink className="mr-2 h-4 w-4" />
+                )}
                 Disconnect
               </Button>
             </div>
@@ -303,8 +391,15 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
               <p className="text-sm text-muted-foreground text-center">
                 Enter your OAuth credentials above, save, then connect your account.
               </p>
-              <Button disabled={!config?.client_id || !config?.client_secret}>
-                <Link2 className="mr-2 h-4 w-4" />
+              <Button 
+                onClick={handleConnect}
+                disabled={!config?.client_id || !config?.client_secret || connecting}
+              >
+                {connecting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Link2 className="mr-2 h-4 w-4" />
+                )}
                 Connect Salesforce
               </Button>
             </div>
