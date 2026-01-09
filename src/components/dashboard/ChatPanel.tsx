@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
-import { Send, MoreVertical, User, Globe, Monitor, MapPin, Archive, UserPlus, Video, Phone, Briefcase, Calendar, Mail, ChevronRight, ChevronLeft, MessageSquare, Heart, Pill, Building, Shield, AlertTriangle } from 'lucide-react';
+import { Send, MoreVertical, User, Globe, Monitor, MapPin, Archive, UserPlus, Video, Phone, Briefcase, Calendar, Mail, ChevronRight, ChevronLeft, MessageSquare, Heart, Pill, Building, Shield, AlertTriangle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Conversation, Message } from '@/types/chat';
 import { Button } from '@/components/ui/button';
@@ -20,10 +20,12 @@ import { mockAgents } from '@/data/mockData';
 import { useVideoChat } from '@/hooks/useVideoChat';
 import { VideoCallModal } from '@/components/video/VideoCallModal';
 import { useToast } from '@/hooks/use-toast';
+import { extractVisitorInfoFromMessages } from '@/utils/extractVisitorInfo';
 interface ChatPanelProps {
   conversation: Conversation | null;
   onSendMessage: (content: string) => void;
   onCloseConversation: () => void;
+  onRefreshVisitorInfo?: () => void;
 }
 
 const formatMessageTime = (date: Date) => {
@@ -87,7 +89,17 @@ const InfoItem = ({ icon: Icon, label, value }: { icon: React.ElementType; label
 );
 
 // Collapsible visitor info sidebar
-const VisitorInfoSidebar = ({ visitor, assignedAgent }: { visitor: any; assignedAgent: any }) => {
+const VisitorInfoSidebar = ({ 
+  visitor, 
+  assignedAgent, 
+  onRefresh, 
+  isRefreshing 
+}: { 
+  visitor: any; 
+  assignedAgent: any; 
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+}) => {
   const [isOpen, setIsOpen] = useState(true);
 
   // Check if we have any treatment-specific info
@@ -127,11 +139,25 @@ const VisitorInfoSidebar = ({ visitor, assignedAgent }: { visitor: any; assigned
         </CollapsibleTrigger>
 
         <CollapsibleContent className="flex-1 overflow-y-auto">
-          <div className="p-3 border-b border-border">
-            <h4 className="font-medium text-sm text-foreground">Visitor Details</h4>
-            <p className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(visitor.createdAt), { addSuffix: true })}
-            </p>
+          <div className="p-3 border-b border-border flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-sm text-foreground">Visitor Details</h4>
+              <p className="text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(visitor.createdAt), { addSuffix: true })}
+              </p>
+            </div>
+            {onRefresh && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                title="Refresh visitor info from conversation"
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+              </Button>
+            )}
           </div>
 
           {/* Personal Info Section */}
@@ -218,9 +244,10 @@ const VisitorInfoSidebar = ({ visitor, assignedAgent }: { visitor: any; assigned
   );
 };
 
-export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: ChatPanelProps) => {
+export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation, onRefreshVisitorInfo }: ChatPanelProps) => {
   const [message, setMessage] = useState('');
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
+  const [isRefreshingVisitorInfo, setIsRefreshingVisitorInfo] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -281,6 +308,44 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleRefreshVisitorInfo = async () => {
+    if (!conversation?.visitor?.id || !conversation?.messages) return;
+    
+    setIsRefreshingVisitorInfo(true);
+    try {
+      const result = await extractVisitorInfoFromMessages(
+        conversation.visitor.id,
+        conversation.messages.map(m => ({
+          sender_type: m.senderType === 'agent' ? 'agent' : 'visitor',
+          content: m.content,
+        }))
+      );
+      
+      if (result.success) {
+        toast({
+          title: "Visitor info refreshed",
+          description: "Details extracted from conversation successfully",
+        });
+        // Trigger parent refresh if callback provided
+        onRefreshVisitorInfo?.();
+      } else {
+        toast({
+          title: "Extraction failed",
+          description: result.error || "Could not extract visitor info",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Extraction failed",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshingVisitorInfo(false);
     }
   };
 
@@ -393,7 +458,12 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
       </div>
 
       {/* Visitor Info Sidebar - Collapsible on large screens */}
-      <VisitorInfoSidebar visitor={visitor} assignedAgent={assignedAgent} />
+      <VisitorInfoSidebar 
+        visitor={visitor} 
+        assignedAgent={assignedAgent} 
+        onRefresh={handleRefreshVisitorInfo}
+        isRefreshing={isRefreshingVisitorInfo}
+      />
 
       {/* Video Call Modal */}
       <VideoCallModal

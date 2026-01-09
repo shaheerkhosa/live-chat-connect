@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { extractVisitorInfo } from '@/utils/extractVisitorInfo';
 
 interface Message {
   id: string;
@@ -105,30 +106,7 @@ const sleep = (ms: number): Promise<void> => {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-ai`;
 const TRACK_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-page-analytics`;
-const EXTRACT_INFO_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-visitor-info`;
 
-const extractVisitorInfo = async (
-  visitorId: string,
-  conversationHistory: { role: string; content: string }[]
-) => {
-  if (!visitorId || conversationHistory.length < 2) return;
-  
-  try {
-    await fetch(EXTRACT_INFO_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
-      body: JSON.stringify({
-        visitorId,
-        conversationHistory,
-      }),
-    });
-  } catch (error) {
-    console.error('Failed to extract visitor info:', error);
-  }
-};
 const trackAnalyticsEvent = async (
   propertyId: string,
   eventType: 'chat_open' | 'human_escalation'
