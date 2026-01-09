@@ -287,6 +287,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
   const aiMessageCountRef = useRef(0);
   const proactiveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const aiAgentIndexRef = useRef(0);
+  const visitorIdRef = useRef<string | null>(null); // Ref to track current visitor ID for extraction
 
   // Fetch AI agents for this property - ONLY assigned agents, no fallback
   const fetchAiAgents = useCallback(async () => {
@@ -420,6 +421,11 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
           .select()
           .single();
 
+        if (!visitorError && testVisitor) {
+          // Fetch geolocation for test visitor (non-blocking)
+          fetchVisitorLocation(testVisitor.id);
+        }
+
         if (visitorError || !testVisitor) {
           console.error('Error creating test visitor:', visitorError);
         } else {
@@ -453,6 +459,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
 
             setConversationId(testConversation.id);
             setVisitorId(testVisitor.id);
+            visitorIdRef.current = testVisitor.id; // Update ref immediately for extraction
 
             // Trigger extraction for test conversations too
             const conversationHistory = allMessages.map(m => ({
@@ -593,6 +600,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     }
 
     setVisitorId(visitor.id);
+    visitorIdRef.current = visitor.id; // Update ref for extraction
 
     // Check for existing conversation
     let { data: conversation } = await supabase
@@ -871,8 +879,10 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
 
     // Extract visitor info in background after each AI response (works in all modes)
     // This allows us to capture details as they're shared naturally in conversation
-    if (visitorId && conversationHistory.length >= 2) {
-      extractVisitorInfo(visitorId, conversationHistory);
+    // Use ref to get the most current visitor ID (state may be stale in preview mode)
+    const currentVisitorId = visitorIdRef.current || visitorId;
+    if (currentVisitorId && conversationHistory.length >= 2) {
+      extractVisitorInfo(currentVisitorId, conversationHistory);
     }
 
     // If connected to a real property (not preview mode), also save to database
