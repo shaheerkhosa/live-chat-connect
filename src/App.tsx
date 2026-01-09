@@ -19,6 +19,7 @@ import Onboarding from "./pages/Onboarding";
 import Settings from "./pages/Settings";
 import Support from "./pages/Support";
 import SlackApp from "./pages/SlackApp";
+import SalesforceCallback from "./pages/SalesforceCallback";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
@@ -73,6 +74,7 @@ const AppRoutes = () => {
       
       <Route path="/widget-preview" element={<WidgetPreview />} />
       <Route path="/slack-app" element={<SlackApp />} />
+      <Route path="/salesforce-callback" element={<SalesforceCallback />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="*" element={<NotFound />} />
