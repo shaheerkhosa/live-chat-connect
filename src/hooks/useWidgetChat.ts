@@ -656,14 +656,16 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     setVisitorInfo({ name, email });
     setRequiresLeadCapture(false);
 
-    if (visitorId && (name || email)) {
+    // Use ref to get the most current visitor ID (state may be stale in preview mode)
+    const currentVisitorId = visitorIdRef.current || visitorId;
+    if (currentVisitorId && (name || email)) {
       await supabase
         .from('visitors')
         .update({ 
           name: name || null, 
           email: email || null 
         })
-        .eq('id', visitorId);
+        .eq('id', currentVisitorId);
     }
   };
 
