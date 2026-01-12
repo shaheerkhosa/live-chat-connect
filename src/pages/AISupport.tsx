@@ -523,15 +523,10 @@ const AISupport = () => {
       
       <div className="flex-1 flex flex-col min-w-0 overflow-auto">
         {/* Header */}
-        <div className="h-16 border-b border-border/30 flex items-center justify-between px-6 glass sticky top-0 z-10">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Bot className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-foreground">AI Support</h1>
-              <p className="text-sm text-muted-foreground">Configure AI agents and behavior</p>
-            </div>
+        <div className="h-16 shrink-0 border-b border-border/30 flex items-center justify-between px-6 glass sticky top-0 z-10">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">AI Support</h1>
+            <p className="text-sm text-muted-foreground">Configure AI agents and behavior</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="icon" onClick={fetchAIAgents}>
