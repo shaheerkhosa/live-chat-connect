@@ -6,6 +6,7 @@ interface Message {
   content: string;
   sender_type: 'agent' | 'visitor';
   created_at: string;
+  sequence_number?: number;
   agent_name?: string;
   agent_avatar?: string | null;
 }
@@ -444,13 +445,14 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
           if (convError || !testConversation) {
             console.error('Error creating test conversation:', convError);
           } else {
-            // Include all messages including the greeting
+            // Include all messages including the greeting with sequence numbers
             const allMessages = messages.filter(m => m.content.trim() !== '');
-            const messagesToSave = allMessages.map((m) => ({
+            const messagesToSave = allMessages.map((m, index) => ({
               conversation_id: testConversation.id,
               sender_id: m.sender_type === 'visitor' ? testVisitor.id : 'ai-bot',
               sender_type: m.sender_type,
               content: m.content,
+              sequence_number: index + 1,
             }));
 
             if (messagesToSave.length > 0) {
@@ -491,13 +493,14 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
           .eq('conversation_id', conversationId)
           .limit(1);
         
-        // If no messages yet, add the greeting first
+        // If no messages yet, add the greeting first with sequence_number 1
         if (!existingMsgs || existingMsgs.length === 0) {
           await supabase.from('messages').insert({
             conversation_id: conversationId,
             sender_id: 'ai-bot',
             sender_type: 'agent',
             content: greetingMsg.content,
+            sequence_number: 1,
           });
         }
       }
@@ -619,12 +622,12 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         setIsEscalated(true);
       }
       
-      // Fetch existing messages
+      // Fetch existing messages ordered by sequence_number
       const { data: existingMessages } = await supabase
         .from('messages')
         .select('*')
         .eq('conversation_id', conversation.id)
-        .order('created_at', { ascending: true });
+        .order('sequence_number', { ascending: true });
 
       // Count AI messages
       aiMessageCountRef.current = (existingMessages || []).filter(
@@ -701,6 +704,17 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     if (humanHasTakenOver) {
       // Just save the message to DB - human agent is handling
       if (conversationId && visitorId) {
+        // Get next sequence number
+        const { data: maxSeqData } = await supabase
+          .from('messages')
+          .select('sequence_number')
+          .eq('conversation_id', conversationId)
+          .order('sequence_number', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        const nextSeq = (maxSeqData?.sequence_number || 0) + 1;
+        
         await supabase
           .from('messages')
           .insert({
@@ -708,6 +722,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
             sender_id: visitorId,
             sender_type: 'visitor',
             content,
+            sequence_number: nextSeq,
           });
       }
       return;
@@ -910,6 +925,17 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
       }
 
       if (currentConversationId) {
+        // Get next sequence number for this conversation
+        const { data: maxSeqData } = await supabase
+          .from('messages')
+          .select('sequence_number')
+          .eq('conversation_id', currentConversationId)
+          .order('sequence_number', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        let nextSeq = (maxSeqData?.sequence_number || 0) + 1;
+
         // Save visitor message
         await supabase
           .from('messages')
@@ -918,9 +944,10 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
             sender_id: visitorId,
             sender_type: 'visitor',
             content,
+            sequence_number: nextSeq,
           });
 
-        // Save AI response
+        // Save AI response with next sequence number
         if (aiContent) {
           await supabase
             .from('messages')
@@ -929,6 +956,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
               sender_id: 'ai-bot',
               sender_type: 'agent',
               content: aiContent,
+              sequence_number: nextSeq + 1,
             });
         }
       }

@@ -236,6 +236,7 @@ export type Database = {
           read: boolean
           sender_id: string
           sender_type: string
+          sequence_number: number
         }
         Insert: {
           content: string
@@ -245,6 +246,7 @@ export type Database = {
           read?: boolean
           sender_id: string
           sender_type: string
+          sequence_number?: number
         }
         Update: {
           content?: string
@@ -254,6 +256,7 @@ export type Database = {
           read?: boolean
           sender_id?: string
           sender_type?: string
+          sequence_number?: number
         }
         Relationships: [
           {

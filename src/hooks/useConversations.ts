@@ -43,6 +43,7 @@ export interface DbMessage {
   content: string;
   read: boolean;
   created_at: string;
+  sequence_number: number;
 }
 
 export interface DbConversation {
@@ -120,7 +121,7 @@ export const useConversations = () => {
           .from('messages')
           .select('*')
           .eq('conversation_id', conv.id)
-          .order('created_at', { ascending: true });
+          .order('sequence_number', { ascending: true });
 
         return {
           ...conv,
@@ -138,6 +139,17 @@ export const useConversations = () => {
   }, [user]);
 
   const sendMessage = async (conversationId: string, content: string, senderId: string) => {
+    // Get next sequence number for this conversation
+    const { data: maxSeqData } = await supabase
+      .from('messages')
+      .select('sequence_number')
+      .eq('conversation_id', conversationId)
+      .order('sequence_number', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const nextSeq = (maxSeqData?.sequence_number || 0) + 1;
+
     const { data, error } = await supabase
       .from('messages')
       .insert({
@@ -146,6 +158,7 @@ export const useConversations = () => {
         sender_type: 'agent',
         content,
         read: true,
+        sequence_number: nextSeq,
       })
       .select()
       .single();
