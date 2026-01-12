@@ -325,7 +325,7 @@ const WidgetPreview = () => {
   return (
     <div className="flex h-screen bg-gradient-subtle">
       <DashboardSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-auto">
         {/* Header */}
         <header className="glass sticky top-0 z-10 border-b border-border/30 shrink-0">
           <div className="px-6 py-4">
@@ -347,7 +347,7 @@ const WidgetPreview = () => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 p-6">
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Settings */}
           <div className="space-y-6">

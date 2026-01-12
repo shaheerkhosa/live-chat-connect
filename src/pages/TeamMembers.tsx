@@ -409,7 +409,7 @@ const TeamMembers = () => {
     <div className="flex h-screen bg-gradient-subtle">
       <DashboardSidebar />
       
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-auto">
         {/* Header */}
         <div className="h-16 border-b border-border/30 flex items-center justify-between px-6 glass sticky top-0 z-10">
           <div className="flex items-center gap-3">
