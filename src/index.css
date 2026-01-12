@@ -26,8 +26,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 20% 25%;
 
-    /* Soft teal - trust, calm, stability */
-    --primary: 174 42% 51%;
+    /* Soft teal - trust, calm, stability (darker, more muted) */
+    --primary: 172 35% 42%;
     --primary-foreground: 0 0% 100%;
 
     /* Lavender undertone - emotional softness */
@@ -46,12 +46,12 @@
 
     --border: 210 25% 92%;
     --input: 210 25% 92%;
-    --ring: 174 42% 51%;
+    --ring: 172 35% 42%;
 
     --radius: 1.5rem;
 
     /* Chat specific - soft, approachable bubbles */
-    --chat-bubble-user: 174 42% 51%;
+    --chat-bubble-user: 172 35% 42%;
     --chat-bubble-user-foreground: 0 0% 100%;
     --chat-bubble-visitor: 210 30% 97%;
     --chat-bubble-visitor-foreground: 220 20% 25%;
@@ -64,18 +64,18 @@
     /* Sidebar - light neutral tones */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 220 20% 30%;
-    --sidebar-primary: 174 42% 45%;
+    --sidebar-primary: 172 35% 38%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 174 35% 95%;
-    --sidebar-accent-foreground: 174 42% 30%;
+    --sidebar-accent: 172 25% 94%;
+    --sidebar-accent-foreground: 172 35% 28%;
     --sidebar-border: 210 25% 92%;
-    --sidebar-ring: 174 42% 45%;
+    --sidebar-ring: 172 35% 38%;
 
     /* Enhanced shadows & effects */
     --shadow-sm: 0 1px 2px 0 hsl(220 20% 25% / 0.03);
     --shadow-md: 0 4px 6px -1px hsl(220 20% 25% / 0.05), 0 2px 4px -2px hsl(220 20% 25% / 0.03);
     --shadow-lg: 0 10px 15px -3px hsl(220 20% 25% / 0.06), 0 4px 6px -4px hsl(220 20% 25% / 0.04);
-    --shadow-glow: 0 0 20px hsl(174 42% 51% / 0.15);
+    --shadow-glow: 0 0 20px hsl(172 35% 42% / 0.15);
   }
 
   .dark {
@@ -89,8 +89,8 @@
     --popover: 0 0% 15%;
     --popover-foreground: 0 0% 95%;
 
-    /* Soft teal/green accent */
-    --primary: 174 45% 55%;
+    /* Soft teal/green accent (darker, more muted) */
+    --primary: 172 35% 45%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 18%;
@@ -99,17 +99,17 @@
     --muted: 0 0% 20%;
     --muted-foreground: 0 0% 55%;
 
-    --accent: 174 30% 18%;
-    --accent-foreground: 174 40% 85%;
+    --accent: 172 25% 18%;
+    --accent-foreground: 172 30% 80%;
 
     --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 20%;
     --input: 0 0% 20%;
-    --ring: 174 45% 55%;
+    --ring: 172 35% 45%;
 
-    --chat-bubble-user: 174 45% 50%;
+    --chat-bubble-user: 172 35% 42%;
     --chat-bubble-user-foreground: 0 0% 100%;
     --chat-bubble-visitor: 0 0% 18%;
     --chat-bubble-visitor-foreground: 0 0% 95%;
@@ -119,17 +119,17 @@
 
     --sidebar-background: 0 0% 10%;
     --sidebar-foreground: 0 0% 85%;
-    --sidebar-primary: 174 45% 55%;
+    --sidebar-primary: 172 35% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 174 25% 18%;
-    --sidebar-accent-foreground: 174 40% 85%;
+    --sidebar-accent: 172 20% 18%;
+    --sidebar-accent-foreground: 172 30% 80%;
     --sidebar-border: 0 0% 18%;
-    --sidebar-ring: 174 45% 55%;
+    --sidebar-ring: 172 35% 45%;
 
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
     --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
     --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -4px hsl(0 0% 0% / 0.2);
-    --shadow-glow: 0 0 20px hsl(174 45% 55% / 0.2);
+    --shadow-glow: 0 0 20px hsl(172 35% 45% / 0.2);
   }
 }
 
