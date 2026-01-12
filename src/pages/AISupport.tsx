@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { PropertySelector } from '@/components/PropertySelector';
-import { Bot, Loader2, Trash2, RefreshCw, Upload, Pencil, Clock, MessageSquare, Save, FileText, Users, Link } from 'lucide-react';
+import { Bot, Loader2, Trash2, RefreshCw, Upload, Pencil, Clock, MessageSquare, Save, FileText, Users, Link, Globe, ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -763,21 +763,39 @@ const AISupport = () => {
                           </p>
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {properties.map((prop) => {
-                              const isAssigned = agent.assigned_properties.includes(prop.id);
-                              return (
-                                <Badge
-                                  key={prop.id}
-                                  variant={isAssigned ? 'default' : 'outline'}
-                                  className="cursor-pointer text-xs"
-                                  onClick={() => handleToggleAIProperty(agent.id, prop.id, isAssigned)}
-                                >
-                                  {prop.name}
-                                </Badge>
-                              );
-                            })}
-                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-8">
+                                <Globe className="h-3.5 w-3.5 mr-2" />
+                                {agent.assigned_properties.length === 0 
+                                  ? 'None' 
+                                  : agent.assigned_properties.length === 1
+                                    ? properties.find(p => p.id === agent.assigned_properties[0])?.name || '1 property'
+                                    : `${agent.assigned_properties.length} properties`
+                                }
+                                <ChevronDown className="h-3.5 w-3.5 ml-2" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-48">
+                              {properties.length === 0 ? (
+                                <DropdownMenuItem disabled>No properties available</DropdownMenuItem>
+                              ) : (
+                                properties.map((prop) => {
+                                  const isAssigned = agent.assigned_properties.includes(prop.id);
+                                  return (
+                                    <DropdownMenuItem
+                                      key={prop.id}
+                                      onClick={() => handleToggleAIProperty(agent.id, prop.id, isAssigned)}
+                                      className="flex items-center gap-2"
+                                    >
+                                      <Checkbox checked={isAssigned} className="pointer-events-none" />
+                                      <span className="truncate">{prop.name}</span>
+                                    </DropdownMenuItem>
+                                  );
+                                })
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">

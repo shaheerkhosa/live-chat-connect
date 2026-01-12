@@ -173,26 +173,12 @@ const ConversationItem = ({
             {lastMessage?.content || 'No messages yet'}
           </p>
 
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {visitor.currentPage && (
-              <span className="flex items-center gap-1">
-                <Globe className="h-3 w-3" />
-                <span className="truncate max-w-[100px]">{visitor.currentPage}</span>
-              </span>
-            )}
-            {visitor.location && (
-              <span className="flex items-center gap-1">
-                <User className="h-3 w-3" />
-                <span className="truncate max-w-[80px]">{visitor.location}</span>
-              </span>
-            )}
-            {status === 'pending' && (
-              <Badge variant="outline" className="text-status-away border-status-away/30 bg-status-away/10 text-xs py-0">
-                <Clock className="h-3 w-3 mr-1" />
-                Pending
-              </Badge>
-            )}
-          </div>
+          {status === 'pending' && (
+            <Badge variant="outline" className="text-status-away border-status-away/30 bg-status-away/10 text-xs py-0 w-fit">
+              <Clock className="h-3 w-3 mr-1" />
+              Pending
+            </Badge>
+          )}
         </div>
       </div>
     </div>
