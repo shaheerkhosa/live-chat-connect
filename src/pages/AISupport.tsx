@@ -540,7 +540,8 @@ const AISupport = () => {
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-6 space-y-6">
+        <div className="flex-1 p-6">
+          <div className="max-w-4xl mx-auto space-y-6">
           {/* Property Selector for AI Settings */}
           <PropertySelector
             properties={properties}
@@ -1142,6 +1143,7 @@ const AISupport = () => {
               </Card>
             </>
           )}
+          </div>
         </div>
       </div>
 
