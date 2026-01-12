@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { useConversations } from '@/hooks/useConversations';
 import { PropertySelector } from '@/components/PropertySelector';
 
@@ -296,14 +295,13 @@ const WidgetPreview = () => {
       <div className="flex h-screen bg-gradient-subtle">
         <DashboardSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="bg-card border-b border-border">
+          <header className="glass sticky top-0 z-10 border-b border-border/30">
             <div className="px-6 py-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-xl font-bold text-foreground">Widget Customization</h1>
                   <p className="text-sm text-muted-foreground">Customize and embed your chat widget</p>
                 </div>
-                <ThemeToggle />
               </div>
             </div>
           </header>
@@ -329,7 +327,7 @@ const WidgetPreview = () => {
       <DashboardSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-card border-b border-border shrink-0">
+        <header className="glass sticky top-0 z-10 border-b border-border/30 shrink-0">
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
@@ -344,7 +342,6 @@ const WidgetPreview = () => {
                   onPropertyChange={handlePropertyChange}
                   onDeleteProperty={deleteProperty}
                 />
-                <ThemeToggle />
               </div>
             </div>
           </div>
