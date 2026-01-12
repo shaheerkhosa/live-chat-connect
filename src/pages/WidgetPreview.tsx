@@ -333,7 +333,7 @@ const WidgetPreview = () => {
         </header>
 
         <main className="flex-1 p-6">
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8">
           {/* Settings */}
           <div className="space-y-6">
             <Tabs defaultValue="widget">
