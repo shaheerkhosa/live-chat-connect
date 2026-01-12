@@ -14,8 +14,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Users, UserPlus, Mail, Loader2, Trash2, RefreshCw, Send, Upload, Bot } from 'lucide-react';
+import { Users, UserPlus, Mail, Loader2, Trash2, RefreshCw, Send, Upload, Bot, Globe, ChevronDown } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface Agent {
   id: string;
@@ -581,24 +587,39 @@ const TeamMembers = () => {
                           {getInvitationBadge(agent.invitation_status)}
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-wrap gap-2">
-                            {properties.map((prop) => {
-                              const isAssigned = agent.assigned_properties.includes(prop.id);
-                              return (
-                                <Badge
-                                  key={prop.id}
-                                  variant={isAssigned ? 'default' : 'outline'}
-                                  className="cursor-pointer"
-                                  onClick={() => handleToggleProperty(agent.id, prop.id, isAssigned)}
-                                >
-                                  {prop.name}
-                                </Badge>
-                              );
-                            })}
-                            {properties.length === 0 && (
-                              <span className="text-sm text-muted-foreground">No properties</span>
-                            )}
-                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-8">
+                                <Globe className="h-3.5 w-3.5 mr-2" />
+                                {agent.assigned_properties.length === 0 
+                                  ? 'None' 
+                                  : agent.assigned_properties.length === 1
+                                    ? properties.find(p => p.id === agent.assigned_properties[0])?.name || '1 property'
+                                    : `${agent.assigned_properties.length} properties`
+                                }
+                                <ChevronDown className="h-3.5 w-3.5 ml-2" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-48">
+                              {properties.length === 0 ? (
+                                <DropdownMenuItem disabled>No properties available</DropdownMenuItem>
+                              ) : (
+                                properties.map((prop) => {
+                                  const isAssigned = agent.assigned_properties.includes(prop.id);
+                                  return (
+                                    <DropdownMenuItem
+                                      key={prop.id}
+                                      onClick={() => handleToggleProperty(agent.id, prop.id, isAssigned)}
+                                      className="flex items-center gap-2"
+                                    >
+                                      <Checkbox checked={isAssigned} className="pointer-events-none" />
+                                      <span className="truncate">{prop.name}</span>
+                                    </DropdownMenuItem>
+                                  );
+                                })
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
