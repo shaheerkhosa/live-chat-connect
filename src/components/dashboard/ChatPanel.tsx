@@ -237,7 +237,6 @@ const VisitorInfoSidebar = ({ visitor, assignedAgent }: { visitor: any; assigned
 export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: ChatPanelProps) => {
   const [message, setMessage] = useState('');
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -272,8 +271,12 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
     setIsVideoCallOpen(false);
   };
 
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   };
 
   useEffect(() => {
@@ -373,7 +376,7 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-background scrollbar-thin">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-background scrollbar-thin">
           {messages.map((msg) => (
             <MessageBubble 
               key={msg.id} 
@@ -381,7 +384,6 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
               isAgent={msg.senderType === 'agent'} 
             />
           ))}
-          <div ref={messagesEndRef} />
         </div>
 
         {/* Input - Rounder styling */}
