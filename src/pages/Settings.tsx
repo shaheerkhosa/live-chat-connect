@@ -85,13 +85,18 @@ const Settings = () => {
     <div className="flex h-screen bg-gradient-subtle">
       <DashboardSidebar />
       
-      <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Header */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-auto">
+        {/* Header */}
+        <div className="h-16 shrink-0 border-b border-border/30 flex items-center justify-between px-6 glass sticky top-0 z-10">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-            <p className="text-muted-foreground">Manage properties and integrations</p>
+            <h1 className="text-xl font-semibold text-foreground">Settings</h1>
+            <p className="text-sm text-muted-foreground">Manage properties and integrations</p>
           </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 p-6">
+          <div className="max-w-4xl mx-auto space-y-6">
 
           {/* Property Selector */}
           <Card>
@@ -213,6 +218,7 @@ const Settings = () => {
               </CardContent>
             </Card>
           )}
+          </div>
         </div>
       </div>
     </div>
