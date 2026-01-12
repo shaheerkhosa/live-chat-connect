@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
 import { Send, MoreVertical, User, Globe, Monitor, MapPin, Archive, UserPlus, Video, Phone, Briefcase, Calendar, Mail, ChevronRight, ChevronLeft, MessageSquare, Heart, Pill, Building, Shield, AlertTriangle } from 'lucide-react';
+import gsap from 'gsap';
 import { cn } from '@/lib/utils';
 import { Conversation, Message } from '@/types/chat';
 import { Button } from '@/components/ui/button';
@@ -49,10 +50,10 @@ const MessageBubble = ({ message, isAgent }: { message: Message; isAgent: boolea
       </Avatar>
     )}
     <div className={cn(
-      "max-w-[70%] rounded-2xl px-4 py-2.5",
+      "max-w-[70%] rounded-3xl px-4 py-2.5",
       isAgent 
-        ? "bg-chat-user text-chat-user-foreground rounded-br-lg" 
-        : "bg-chat-visitor text-chat-visitor-foreground rounded-bl-lg"
+        ? "bg-chat-user text-chat-user-foreground rounded-br-xl" 
+        : "bg-chat-visitor text-chat-visitor-foreground rounded-bl-xl"
     )}>
       <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
       <p className={cn(
@@ -123,7 +124,7 @@ const VisitorInfoSidebar = ({ visitor, assignedAgent }: { visitor: any; assigned
 
   return (
     <div className={cn(
-      "border-l border-border/50 hidden lg:flex flex-col transition-all duration-200 glass",
+      "border-l border-border/30 hidden lg:flex flex-col transition-all duration-200 glass",
       isOpen ? "w-64" : "w-10"
     )}>
       <Collapsible open={isOpen} onOpenChange={setIsOpen} className="flex flex-col h-full">
@@ -311,8 +312,8 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
     <div className="flex h-full bg-gradient-subtle">
       {/* Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <div className="h-16 px-4 flex items-center justify-between border-b border-border/50 glass-subtle rounded-t-xl">
+        {/* Header - Simplified */}
+        <div className="h-16 px-4 flex items-center justify-between border-b border-border/30 glass-subtle rounded-t-2xl">
           <div className="flex items-center gap-3 min-w-0">
             <Avatar className="h-10 w-10 flex-shrink-0">
               <AvatarFallback className="bg-primary/10 text-primary">
@@ -330,7 +331,7 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
             <Badge 
               variant="outline" 
               className={cn(
-                "capitalize",
+                "capitalize text-xs",
                 status === 'active' && "border-status-online text-status-online bg-status-online/10",
                 status === 'pending' && "border-status-away text-status-away bg-status-away/10",
                 status === 'closed' && "border-muted-foreground text-muted-foreground"
@@ -338,34 +339,33 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
             >
               {status}
             </Badge>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleStartVideoCall}
-              disabled={status === 'closed'}
-              className="gap-2"
-            >
-              <Video className="h-4 w-4" />
-              Video Call
-            </Button>
+            {/* Actions Dropdown - All actions in one place */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="h-9 w-9">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem 
+                  onClick={handleStartVideoCall}
+                  disabled={status === 'closed'}
+                >
+                  <Video className="h-4 w-4 mr-2" />
+                  Start Video Call
+                </DropdownMenuItem>
                 <DropdownMenuItem>
                   <UserPlus className="h-4 w-4 mr-2" />
-                  Assign to agent
+                  Assign to Agent
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={onCloseConversation}
                   disabled={status === 'closed'}
+                  className="text-destructive focus:text-destructive"
                 >
                   <Archive className="h-4 w-4 mr-2" />
-                  Close conversation
+                  Close Conversation
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -384,8 +384,8 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        <div className="p-4 border-t border-border/50 glass-subtle rounded-b-xl">
+        {/* Input - Rounder styling */}
+        <div className="p-4 border-t border-border/30 glass-subtle rounded-b-2xl">
           <div className="flex gap-2">
             <Input
               ref={inputRef}
@@ -394,12 +394,12 @@ export const ChatPanel = ({ conversation, onSendMessage, onCloseConversation }: 
               onKeyDown={handleKeyDown}
               placeholder={status === 'closed' ? 'Conversation closed' : 'Type a message...'}
               disabled={status === 'closed'}
-              className="flex-1 bg-background/50 focus:bg-background transition-colors"
+              className="flex-1 bg-background/50 focus:bg-background transition-colors rounded-xl"
             />
             <Button 
               onClick={handleSend} 
               disabled={!message.trim() || status === 'closed'}
-              className="bg-primary hover:bg-primary/90 glow-primary transition-all hover:scale-105"
+              className="bg-primary hover:bg-primary/90 glow-primary transition-all hover:scale-105 rounded-xl"
             >
               <Send className="h-4 w-4" />
             </Button>

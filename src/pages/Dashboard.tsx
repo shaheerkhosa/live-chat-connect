@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Filter, Plus, Trash2 } from 'lucide-react';
+import { Search, Filter, Plus, MoreHorizontal } from 'lucide-react';
+import gsap from 'gsap';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { ConversationList } from '@/components/dashboard/ConversationList';
 import { ChatPanel } from '@/components/dashboard/ChatPanel';
@@ -15,6 +16,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -69,6 +82,9 @@ const DashboardContent = () => {
   const location = useLocation();
   const { conversations: dbConversations, properties, loading: dataLoading, sendMessage, markMessagesAsRead, closeConversation, closeConversations, deleteConversation, deleteConversations } = useConversations();
   const { setCollapsed } = useSidebarState();
+  const [filterOpen, setFilterOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   
   // Determine filter from path
   const statusFilter = useMemo((): FilterStatus => {
@@ -275,49 +291,91 @@ const DashboardContent = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gradient-subtle">
+    <div ref={containerRef} className="flex h-screen bg-gradient-subtle">
       <DashboardSidebar />
       
       <div className="flex-1 flex min-w-0">
         {/* Conversation List */}
-        <div className="w-80 border-r border-border/50 flex flex-col glass">
-          {/* Header */}
-          <div className="p-4 border-b border-border/50 space-y-3 bg-transparent">
+        <div ref={listRef} className="w-80 border-r border-border/30 flex flex-col glass">
+          {/* Header - Simplified */}
+          <div className="p-4 border-b border-border/30 space-y-3 bg-transparent">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-foreground">{getStatusTitle()}</h2>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={handleCreateTestConversation} className="text-xs h-7">
-                  <Plus className="h-3 w-3 mr-1" />
-                  Test
-                </Button>
+              <div className="flex items-center gap-1">
                 {totalUnread > 0 && (
-                  <span className="text-sm text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">{totalUnread} unread</span>
+                  <span className="text-xs text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full mr-1">
+                    {totalUnread}
+                  </span>
                 )}
+                
+                {/* Filter Popover */}
+                <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={`h-8 w-8 ${propertyFilter !== 'all' ? 'text-primary' : 'text-muted-foreground'}`}
+                    >
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-2" align="end">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground px-2 py-1">Filter by property</p>
+                      <button
+                        onClick={() => { setPropertyFilter('all'); setFilterOpen(false); }}
+                        className={`w-full text-left px-2 py-1.5 text-sm rounded-lg transition-colors ${
+                          propertyFilter === 'all' 
+                            ? 'bg-primary/10 text-primary font-medium' 
+                            : 'hover:bg-muted text-foreground'
+                        }`}
+                      >
+                        All Properties
+                      </button>
+                      {properties.map(prop => (
+                        <button
+                          key={prop.id}
+                          onClick={() => { setPropertyFilter(prop.id); setFilterOpen(false); }}
+                          className={`w-full text-left px-2 py-1.5 text-sm rounded-lg transition-colors ${
+                            propertyFilter === prop.id 
+                              ? 'bg-primary/10 text-primary font-medium' 
+                              : 'hover:bg-muted text-foreground'
+                          }`}
+                        >
+                          {prop.name}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {/* More Options Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleCreateTestConversation}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Test Conversation
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
             
+            {/* Search Only */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search conversations..."
-                className="pl-9 bg-background/50 border-border/50 focus:bg-background transition-colors"
+                placeholder="Search..."
+                className="pl-9 bg-background/50 border-border/30 focus:bg-background transition-colors rounded-xl"
               />
             </div>
-
-            <Select value={propertyFilter} onValueChange={setPropertyFilter}>
-              <SelectTrigger className="w-full bg-background/50 border-border/50 hover:bg-background transition-colors">
-                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-                <SelectValue placeholder="Filter by property" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Properties</SelectItem>
-                {properties.map(prop => (
-                  <SelectItem key={prop.id} value={prop.id}>{prop.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           {/* List */}
