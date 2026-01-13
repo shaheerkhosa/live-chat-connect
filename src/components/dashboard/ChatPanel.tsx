@@ -106,7 +106,7 @@ const VisitorInfoSidebar = ({
   return (
     <div className={cn("border-l border-border/30 hidden lg:flex flex-col transition-all duration-200 bg-card w-64")}>
       <div className="flex-1 overflow-y-auto">
-        <div className="p-3 border-b border-border/30">
+        <div className="p-4 border-b border-border/30">
           <h4 className="font-medium text-sm text-foreground">Visitor Details</h4>
           <p className="text-xs text-muted-foreground">
             {formatDistanceToNow(new Date(visitor.createdAt), { addSuffix: true })}
