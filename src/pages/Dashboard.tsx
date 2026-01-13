@@ -437,43 +437,45 @@ const DashboardContent = () => {
           </div>
         </div>
 
-        {/* Main Content Row */}
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Conversation List Column */}
-          <div ref={listRef} className="w-80 border-r border-border/30 flex flex-col glass shrink-0">
-            {/* Search - White/light background */}
-            <div className="px-4 py-3 bg-background border-b border-border/30">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search..."
-                  className="pl-9 bg-muted/50 border-border/30 text-foreground placeholder:text-muted-foreground focus:bg-background transition-colors rounded-xl"
-                />
+        {/* Main Content Row - Wrapped in glass container */}
+        <div className="flex flex-1 min-h-0 overflow-hidden p-2">
+          <div className="flex flex-1 min-h-0 overflow-hidden rounded-2xl border border-border/30 bg-background/50 backdrop-blur-sm">
+            {/* Conversation List Column */}
+            <div ref={listRef} className="w-80 border-r border-border/30 flex flex-col shrink-0">
+              {/* Search - White/light background */}
+              <div className="px-4 py-3 border-b border-border/30">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search..."
+                    className="pl-9 bg-muted/50 border-border/30 text-foreground placeholder:text-muted-foreground focus:bg-background transition-colors rounded-xl"
+                  />
+                </div>
               </div>
+
+              {/* List */}
+              <ConversationList
+                conversations={conversationsWithLastMessage}
+                selectedId={selectedConversation?.id}
+                onSelect={handleSelectConversation}
+                showDelete={isClosedView}
+                onDelete={handleDeleteConversation}
+                onBulkClose={handleBulkClose}
+                onBulkDelete={handleBulkDelete}
+                showBulkActions={true}
+              />
             </div>
 
-            {/* List */}
-            <ConversationList
-              conversations={conversationsWithLastMessage}
-              selectedId={selectedConversation?.id}
-              onSelect={handleSelectConversation}
-              showDelete={isClosedView}
-              onDelete={handleDeleteConversation}
-              onBulkClose={handleBulkClose}
-              onBulkDelete={handleBulkDelete}
-              showBulkActions={true}
-            />
-          </div>
-
-          {/* Chat Panel */}
-          <div className="flex-1 min-w-0">
-            <ChatPanel
-              conversation={selectedConversation}
-              onSendMessage={handleSendMessage}
-              onCloseConversation={handleCloseConversation}
-            />
+            {/* Chat Panel */}
+            <div className="flex-1 min-w-0">
+              <ChatPanel
+                conversation={selectedConversation}
+                onSendMessage={handleSendMessage}
+                onCloseConversation={handleCloseConversation}
+              />
+            </div>
           </div>
         </div>
       </div>
