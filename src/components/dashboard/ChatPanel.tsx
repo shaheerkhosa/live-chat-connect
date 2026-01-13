@@ -58,7 +58,7 @@ const EmptyState = () => <div className="flex flex-col items-center justify-cent
     </p>
   </div>;
 
-// Compact visitor info item with expandable tooltip - uses sidebar colors
+// Compact visitor info item with expandable tooltip
 const InfoItem = ({
   icon: Icon,
   label,
@@ -71,9 +71,9 @@ const InfoItem = ({
   const [expanded, setExpanded] = useState(false);
   const isTruncated = value.length > 20;
   return <div className="flex items-start gap-2 py-1.5">
-      <Icon className="h-3.5 w-3.5 text-sidebar-foreground/60 flex-shrink-0 mt-0.5" />
-      <span className="text-xs text-sidebar-foreground/60 min-w-[50px]">{label}:</span>
-      <span className={cn("text-xs text-sidebar-foreground", isTruncated && "cursor-pointer hover:text-sidebar-primary", expanded ? "whitespace-pre-wrap break-words" : "truncate")} onClick={() => isTruncated && setExpanded(!expanded)} title={isTruncated ? expanded ? "Click to collapse" : "Click to expand" : undefined}>
+      <Icon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+      <span className="text-xs text-muted-foreground min-w-[50px]">{label}:</span>
+      <span className={cn("text-xs text-foreground", isTruncated && "cursor-pointer hover:text-primary", expanded ? "whitespace-pre-wrap break-words" : "truncate")} onClick={() => isTruncated && setExpanded(!expanded)} title={isTruncated ? expanded ? "Click to collapse" : "Click to expand" : undefined}>
         {value}
       </span>
     </div>;
@@ -103,19 +103,19 @@ const VisitorInfoSidebar = ({
     }
     return <Badge variant="secondary" className="text-xs">{urgency}</Badge>;
   };
-  return <div className={cn("border-l border-sidebar-border hidden lg:flex flex-col transition-all duration-200 bg-sidebar", isOpen ? "w-64" : "w-10")}>
+  return <div className={cn("border-l border-border/30 hidden lg:flex flex-col transition-all duration-200 bg-card", isOpen ? "w-64" : "w-10")}>
       <Collapsible open={isOpen} onOpenChange={setIsOpen} className="flex flex-col h-full">
         {/* Toggle button */}
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" size="sm" className={cn("h-8 w-full justify-center border-b border-sidebar-border rounded-none text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground", isOpen && "justify-end px-2")}>
+          <Button variant="ghost" size="sm" className={cn("h-8 w-full justify-center border-b border-border/30 rounded-none", isOpen && "justify-end px-2")}>
             {isOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
         </CollapsibleTrigger>
 
-        <CollapsibleContent className="flex-1 overflow-y-auto bg-sidebar">
-          <div className="p-3 border-b border-sidebar-border">
-            <h4 className="font-medium text-sm text-sidebar-foreground">Visitor Details</h4>
-            <p className="text-xs text-sidebar-foreground/60">
+        <CollapsibleContent className="flex-1 overflow-y-auto">
+          <div className="p-3 border-b border-border/30">
+            <h4 className="font-medium text-sm text-foreground">Visitor Details</h4>
+            <p className="text-xs text-muted-foreground">
               {formatDistanceToNow(new Date(visitor.createdAt), {
               addSuffix: true
             })}
@@ -132,8 +132,8 @@ const VisitorInfoSidebar = ({
           </div>
 
           {/* Treatment Details Section */}
-          {hasTreatmentInfo && <div className="p-3 border-t border-sidebar-border space-y-1">
-              <p className="text-xs font-medium text-sidebar-foreground/60 mb-2 flex items-center gap-1">
+          {hasTreatmentInfo && <div className="p-3 border-t border-border/30 space-y-1">
+              <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
                 <Heart className="h-3 w-3" />
                 Treatment Details
               </p>
@@ -142,31 +142,31 @@ const VisitorInfoSidebar = ({
               {visitor.treatment_interest && <InfoItem icon={Building} label="Seeking" value={visitor.treatment_interest} />}
               {visitor.insurance_info && <InfoItem icon={Shield} label="Insurance" value={visitor.insurance_info} />}
               {visitor.urgency_level && <div className="flex items-center gap-2 py-1.5">
-                  <AlertTriangle className="h-3.5 w-3.5 text-sidebar-foreground/60 flex-shrink-0" />
-                  <span className="text-xs text-sidebar-foreground/60 min-w-[50px]">Urgency:</span>
+                  <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                  <span className="text-xs text-muted-foreground min-w-[50px]">Urgency:</span>
                   {getUrgencyBadge(visitor.urgency_level)}
                 </div>}
             </div>}
 
           {/* Session Info Section */}
-          <div className="p-3 border-t border-sidebar-border space-y-1">
-            <p className="text-xs font-medium text-sidebar-foreground/60 mb-2">Session Info</p>
+          <div className="p-3 border-t border-border/30 space-y-1">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Session Info</p>
             {visitor.location && <InfoItem icon={MapPin} label="Location" value={visitor.location} />}
             {visitor.currentPage && <InfoItem icon={Globe} label="Page" value={visitor.currentPage} />}
             {visitor.browserInfo && <InfoItem icon={Monitor} label="Browser" value={visitor.browserInfo} />}
           </div>
 
-          {assignedAgent && <div className="p-3 border-t border-sidebar-border">
-              <p className="text-xs text-sidebar-foreground/60 mb-2">Assigned Agent</p>
+          {assignedAgent && <div className="p-3 border-t border-border/30">
+              <p className="text-xs text-muted-foreground mb-2">Assigned Agent</p>
               <div className="flex items-center gap-2">
                 <Avatar className="h-6 w-6">
-                  <AvatarFallback className="bg-sidebar-primary/20 text-sidebar-primary text-xs">
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
                     {assignedAgent.name.split(' ').map((n: string) => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="text-xs font-medium text-sidebar-foreground">{assignedAgent.name}</p>
-                  <p className="text-xs text-sidebar-foreground/60 capitalize">{assignedAgent.status}</p>
+                  <p className="text-xs font-medium text-foreground">{assignedAgent.name}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{assignedAgent.status}</p>
                 </div>
               </div>
             </div>}
