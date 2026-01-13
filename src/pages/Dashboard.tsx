@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Filter, Plus, MoreHorizontal } from 'lucide-react';
+import { Search, Filter, Plus, MoreHorizontal, MoreVertical, Video, UserPlus, Archive } from 'lucide-react';
 import gsap from 'gsap';
+import { cn } from '@/lib/utils';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { ConversationList } from '@/components/dashboard/ConversationList';
 import { ChatPanel } from '@/components/dashboard/ChatPanel';
@@ -9,6 +10,8 @@ import { useConversations, DbConversation } from '@/hooks/useConversations';
 import { Conversation, Message } from '@/types/chat';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -294,11 +297,11 @@ const DashboardContent = () => {
     <div ref={containerRef} className="flex h-screen bg-gradient-subtle overflow-hidden">
       <DashboardSidebar />
       
-      <div className="flex-1 flex min-w-0 overflow-hidden">
-        {/* Conversation List */}
-        <div ref={listRef} className="w-80 border-r border-border/30 flex flex-col glass">
-          {/* Header - Black to match sidebar */}
-          <div className="px-4 py-3 bg-sidebar text-sidebar-foreground rounded-br-2xl">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Unified Header - Black spanning all sections */}
+        <div className="flex shrink-0 bg-sidebar text-sidebar-foreground">
+          {/* Conversation List Header */}
+          <div className="w-80 px-4 py-3 border-r border-sidebar-border shrink-0">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-sidebar-foreground">{getStatusTitle()}</h2>
               <div className="flex items-center gap-1">
@@ -366,40 +369,112 @@ const DashboardContent = () => {
               </div>
             </div>
           </div>
-          
-          {/* Search - White/light background */}
-          <div className="px-4 py-3 bg-background border-b border-border/30">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search..."
-                className="pl-9 bg-muted/50 border-border/30 text-foreground placeholder:text-muted-foreground focus:bg-background transition-colors rounded-xl"
-              />
-            </div>
+
+          {/* Chat Panel Header */}
+          <div className="flex-1 px-4 py-3 border-r border-sidebar-border flex items-center justify-between min-w-0">
+            {selectedConversation ? (
+              <>
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarFallback className="bg-sidebar-primary/20 text-sidebar-primary text-xs">
+                      {(selectedConversation.visitor.name || `Visitor ${selectedConversation.visitor.sessionId.slice(-4)}`).split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-sidebar-foreground truncate text-sm">
+                      {selectedConversation.visitor.name || `Visitor ${selectedConversation.visitor.sessionId.slice(-4)}`}
+                    </h3>
+                    <p className="text-xs text-sidebar-foreground/60 truncate">
+                      {selectedConversation.visitor.currentPage || 'Browsing'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={cn(
+                    "capitalize text-xs border-sidebar-border",
+                    selectedConversation.status === 'active' && "border-status-online text-status-online bg-status-online/10",
+                    selectedConversation.status === 'pending' && "border-status-away text-status-away bg-status-away/10",
+                    selectedConversation.status === 'closed' && "border-sidebar-foreground/50 text-sidebar-foreground/50"
+                  )}>
+                    {selectedConversation.status}
+                  </Badge>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-sidebar-foreground/60 hover:bg-sidebar-accent">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem disabled={selectedConversation.status === 'closed'}>
+                        <Video className="h-4 w-4 mr-2" />
+                        Start Video Call
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Assign to Agent
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={handleCloseConversation} 
+                        disabled={selectedConversation.status === 'closed'} 
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Archive className="h-4 w-4 mr-2" />
+                        Close Conversation
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </>
+            ) : (
+              <span className="text-sidebar-foreground/50 text-sm">Select a conversation</span>
+            )}
           </div>
 
-          {/* List */}
-          <ConversationList
-            conversations={conversationsWithLastMessage}
-            selectedId={selectedConversation?.id}
-            onSelect={handleSelectConversation}
-            showDelete={isClosedView}
-            onDelete={handleDeleteConversation}
-            onBulkClose={handleBulkClose}
-            onBulkDelete={handleBulkDelete}
-            showBulkActions={true}
-          />
+          {/* Visitor Details Header */}
+          <div className="w-64 px-4 py-3 hidden lg:flex items-center shrink-0">
+            <h4 className="font-medium text-sm text-sidebar-foreground">Visitor Details</h4>
+          </div>
         </div>
 
-        {/* Chat Panel */}
-        <div className="flex-1 min-w-0">
-          <ChatPanel
-            conversation={selectedConversation}
-            onSendMessage={handleSendMessage}
-            onCloseConversation={handleCloseConversation}
-          />
+        {/* Main Content Row */}
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          {/* Conversation List Column */}
+          <div ref={listRef} className="w-80 border-r border-border/30 flex flex-col glass shrink-0">
+            {/* Search - White/light background */}
+            <div className="px-4 py-3 bg-background border-b border-border/30">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search..."
+                  className="pl-9 bg-muted/50 border-border/30 text-foreground placeholder:text-muted-foreground focus:bg-background transition-colors rounded-xl"
+                />
+              </div>
+            </div>
+
+            {/* List */}
+            <ConversationList
+              conversations={conversationsWithLastMessage}
+              selectedId={selectedConversation?.id}
+              onSelect={handleSelectConversation}
+              showDelete={isClosedView}
+              onDelete={handleDeleteConversation}
+              onBulkClose={handleBulkClose}
+              onBulkDelete={handleBulkDelete}
+              showBulkActions={true}
+            />
+          </div>
+
+          {/* Chat Panel */}
+          <div className="flex-1 min-w-0">
+            <ChatPanel
+              conversation={selectedConversation}
+              onSendMessage={handleSendMessage}
+              onCloseConversation={handleCloseConversation}
+            />
+          </div>
         </div>
       </div>
     </div>
