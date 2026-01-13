@@ -297,13 +297,13 @@ const DashboardContent = () => {
       <div className="flex-1 flex min-w-0 overflow-hidden">
         {/* Conversation List */}
         <div ref={listRef} className="w-80 border-r border-border/30 flex flex-col glass">
-          {/* Header - Simplified */}
-          <div className="p-4 border-b border-border/30 space-y-3 bg-transparent">
+          {/* Header - Black to match sidebar */}
+          <div className="p-4 border-b border-sidebar-border space-y-3 bg-sidebar text-sidebar-foreground rounded-br-2xl">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-foreground">{getStatusTitle()}</h2>
+              <h2 className="text-lg font-semibold text-sidebar-foreground">{getStatusTitle()}</h2>
               <div className="flex items-center gap-1">
                 {totalUnread > 0 && (
-                  <span className="text-xs text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full mr-1">
+                  <span className="text-xs text-sidebar-primary font-medium bg-sidebar-primary/20 px-2 py-0.5 rounded-full mr-1">
                     {totalUnread}
                   </span>
                 )}
@@ -314,7 +314,7 @@ const DashboardContent = () => {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className={`h-8 w-8 ${propertyFilter !== 'all' ? 'text-primary' : 'text-muted-foreground'}`}
+                      className={`h-8 w-8 ${propertyFilter !== 'all' ? 'text-sidebar-primary' : 'text-sidebar-foreground/60'} hover:bg-sidebar-accent`}
                     >
                       <Filter className="h-4 w-4" />
                     </Button>
@@ -352,7 +352,7 @@ const DashboardContent = () => {
                 {/* More Options Menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-sidebar-foreground/60 hover:bg-sidebar-accent">
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -368,12 +368,12 @@ const DashboardContent = () => {
             
             {/* Search Only */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sidebar-foreground/50" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search..."
-                className="pl-9 bg-background/50 border-border/30 focus:bg-background transition-colors rounded-xl"
+                className="pl-9 bg-sidebar-accent border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/50 focus:bg-sidebar-accent/80 transition-colors rounded-xl"
               />
             </div>
           </div>

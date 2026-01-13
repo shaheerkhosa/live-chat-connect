@@ -14,7 +14,7 @@ export const PageHeader = ({ title, description, children, className }: PageHead
       className={cn(
         "h-16 shrink-0 flex items-center justify-between px-6 sticky top-0 z-10",
         "bg-sidebar text-sidebar-foreground",
-        "rounded-bl-2xl", // Curve where sidebar meets header
+        "rounded-br-2xl", // Curve on bottom-right where header meets content
         className
       )}
     >
