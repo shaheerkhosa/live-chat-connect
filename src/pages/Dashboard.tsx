@@ -298,7 +298,7 @@ const DashboardContent = () => {
         {/* Conversation List */}
         <div ref={listRef} className="w-80 border-r border-border/30 flex flex-col glass">
           {/* Header - Black to match sidebar */}
-          <div className="p-4 border-b border-sidebar-border space-y-3 bg-sidebar text-sidebar-foreground rounded-br-2xl">
+          <div className="px-4 py-3 bg-sidebar text-sidebar-foreground rounded-br-2xl">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-sidebar-foreground">{getStatusTitle()}</h2>
               <div className="flex items-center gap-1">
@@ -365,15 +365,17 @@ const DashboardContent = () => {
                 </DropdownMenu>
               </div>
             </div>
-            
-            {/* Search Only */}
+          </div>
+          
+          {/* Search - White/light background */}
+          <div className="px-4 py-3 bg-background border-b border-border/30">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sidebar-foreground/50" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search..."
-                className="pl-9 bg-sidebar-accent border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-foreground/50 focus:bg-sidebar-accent/80 transition-colors rounded-xl"
+                className="pl-9 bg-muted/50 border-border/30 text-foreground placeholder:text-muted-foreground focus:bg-background transition-colors rounded-xl"
               />
             </div>
           </div>
