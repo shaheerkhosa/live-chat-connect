@@ -117,7 +117,8 @@ export const DashboardSidebar = () => {
   return (
     <aside 
       className={cn(
-        "h-screen flex flex-col border-r border-sidebar-border/80 transition-all duration-300 bg-sidebar text-sidebar-foreground",
+        "h-screen flex flex-col transition-all duration-300 bg-sidebar text-sidebar-foreground",
+        "rounded-tr-2xl", // Curve at top-right where sidebar meets header
         collapsed ? "w-[68px]" : "w-64"
       )}
     >

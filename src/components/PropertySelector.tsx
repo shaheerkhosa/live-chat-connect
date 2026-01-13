@@ -28,6 +28,8 @@ interface PropertySelectorProps {
   showDomain?: boolean;
   showIcon?: boolean;
   className?: string;
+  /** Use 'header' variant when rendered inside the dark PageHeader */
+  variant?: 'default' | 'header';
 }
 
 export const PropertySelector = ({
@@ -38,6 +40,7 @@ export const PropertySelector = ({
   showDomain = false,
   showIcon = true,
   className = 'w-[220px]',
+  variant = 'default',
 }: PropertySelectorProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [propertyToDelete, setPropertyToDelete] = useState<DbProperty | null>(null);
@@ -84,21 +87,27 @@ export const PropertySelector = ({
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
 
+  const isHeader = variant === 'header';
+
   return (
     <>
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            className={cn('justify-between', className)}
+            className={cn(
+              'justify-between',
+              isHeader && 'border-sidebar-foreground/20 bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+              className
+            )}
           >
             <span className="flex items-center gap-2 truncate">
-              {showIcon && <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />}
+              {showIcon && <Building2 className={cn("h-4 w-4 shrink-0", isHeader ? "text-sidebar-foreground/60" : "text-muted-foreground")} />}
               <span className="truncate">
                 {selectedProperty ? getPropertyLabel(selectedProperty) : 'Select property'}
               </span>
             </span>
-            <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
+            <ChevronDown className={cn("h-4 w-4 shrink-0 ml-2", isHeader ? "text-sidebar-foreground/60" : "text-muted-foreground")} />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[280px]">

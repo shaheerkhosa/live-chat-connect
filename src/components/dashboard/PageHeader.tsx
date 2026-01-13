@@ -1,0 +1,56 @@
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+
+interface PageHeaderProps {
+  title: string;
+  description?: string;
+  children?: React.ReactNode;
+  className?: string;
+}
+
+export const PageHeader = ({ title, description, children, className }: PageHeaderProps) => {
+  return (
+    <div 
+      className={cn(
+        "h-16 shrink-0 flex items-center justify-between px-6 sticky top-0 z-10",
+        "bg-sidebar text-sidebar-foreground",
+        "rounded-bl-2xl", // Curve where sidebar meets header
+        className
+      )}
+    >
+      <div>
+        <h1 className="text-xl font-semibold text-sidebar-foreground">{title}</h1>
+        {description && (
+          <p className="text-sm text-sidebar-foreground/60">{description}</p>
+        )}
+      </div>
+      {children && (
+        <div className="flex items-center gap-2">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Primary action button styled for dark header
+export const HeaderButton = ({ 
+  children, 
+  variant = 'default',
+  ...props 
+}: React.ComponentProps<typeof Button> & { variant?: 'default' | 'outline' | 'ghost' }) => {
+  const variantClasses = {
+    default: 'bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90',
+    outline: 'border-sidebar-foreground/20 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground bg-transparent',
+    ghost: 'text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent',
+  };
+
+  return (
+    <Button 
+      {...props}
+      className={cn(variantClasses[variant], props.className)}
+    >
+      {children}
+    </Button>
+  );
+};

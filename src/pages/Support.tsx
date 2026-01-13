@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -162,12 +163,10 @@ const Support = () => {
       
       <div className="flex-1 flex flex-col min-w-0 overflow-auto">
         {/* Header */}
-        <div className="h-16 shrink-0 border-b border-border/30 flex items-center justify-between px-6 glass sticky top-0 z-10">
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">Support</h1>
-            <p className="text-sm text-muted-foreground">Get help, report bugs, or contact our team</p>
-          </div>
-        </div>
+        <PageHeader 
+          title="Support" 
+          description="Get help, report bugs, or contact our team"
+        />
 
         {/* Content */}
         <div className="flex-1 p-6">
