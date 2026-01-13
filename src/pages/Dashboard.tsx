@@ -297,9 +297,11 @@ const DashboardContent = () => {
     <div ref={containerRef} className="flex h-screen bg-gradient-subtle overflow-hidden">
       <DashboardSidebar />
       
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Unified Header - Black spanning all sections */}
-        <div className="flex shrink-0 bg-sidebar text-sidebar-foreground pl-2">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden p-2">
+        {/* Outer Border Container */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-2xl border border-border/30">
+          {/* Unified Header - Black spanning all sections */}
+          <div className="flex shrink-0 bg-sidebar text-sidebar-foreground rounded-t-2xl">
           {/* Conversation List Header */}
           <div className="w-80 px-4 py-3 border-r border-sidebar-border shrink-0">
             <div className="flex items-center justify-between">
@@ -430,16 +432,15 @@ const DashboardContent = () => {
           </div>
 
           {/* Visitor Details Header */}
-          <div className="w-64 px-4 py-3 hidden lg:flex items-center shrink-0 mr-2">
+          <div className="w-64 px-4 py-3 hidden lg:flex items-center shrink-0">
             {selectedConversation && (
               <h4 className="font-medium text-sm text-sidebar-foreground">Visitor Details</h4>
             )}
           </div>
         </div>
 
-        {/* Main Content Row - Wrapped in glass container */}
-        <div className="flex flex-1 min-h-0 overflow-hidden p-2">
-          <div className="flex flex-1 min-h-0 overflow-hidden rounded-2xl border border-border/30 bg-background/50 backdrop-blur-sm">
+          {/* Main Content Row */}
+          <div className="flex flex-1 min-h-0 overflow-hidden bg-background/50 backdrop-blur-sm">
             {/* Conversation List Column */}
             <div ref={listRef} className="w-80 border-r border-border/30 flex flex-col shrink-0">
               {/* Search - White/light background */}
