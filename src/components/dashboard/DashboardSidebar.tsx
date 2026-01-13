@@ -126,10 +126,7 @@ export const DashboardSidebar = () => {
         collapsed ? "justify-center" : "justify-between"
       )}>
         {!collapsed && (
-          <div className="flex items-center gap-2">
-            <img src={scaledBotLogo} alt="Scaled Bot" className="h-8 w-8 rounded-lg" />
-            <span className="font-bold text-lg text-sidebar-foreground">Scaled Bot</span>
-          </div>
+          <span className="font-bold text-lg text-sidebar-foreground">Scaled Bot</span>
         )}
         <Button
           variant="ghost"
