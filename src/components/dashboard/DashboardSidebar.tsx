@@ -22,7 +22,6 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useConversations';
 import { useSidebarState } from '@/hooks/useSidebarState';
-import scaledBotLogo from '@/assets/scaled-bot-logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface SidebarItemProps {
@@ -41,20 +40,22 @@ const SidebarItem = ({ to, icon: Icon, label, badge, collapsed }: SidebarItemPro
     <NavLink
       to={to}
       className={cn(
-        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-        "hover:bg-sidebar-accent group",
+        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 relative",
+        "hover:bg-sidebar-accent/80 group",
         isActive 
-          ? "bg-sidebar-accent text-foreground font-semibold" 
-          : "text-foreground/90 hover:text-foreground"
+          ? "bg-sidebar-accent text-sidebar-accent-foreground" 
+          : "text-sidebar-foreground/80 hover:text-sidebar-foreground"
       )}
     >
-      <Icon className={cn(
-        "h-5 w-5 flex-shrink-0 transition-colors",
-        isActive ? "text-sidebar-primary" : "group-hover:text-sidebar-primary"
-      )} />
+      <Icon
+        className={cn(
+          "h-5 w-5 flex-shrink-0 transition-colors",
+          isActive ? "text-sidebar-primary" : "text-sidebar-foreground/80 group-hover:text-sidebar-primary"
+        )}
+      />
       {!collapsed && (
         <>
-          <span className="flex-1">{label}</span>
+          <span className={cn("flex-1", isActive ? "font-semibold" : "font-medium")}>{label}</span>
           {badge && badge > 0 && (
             <span className="bg-sidebar-primary text-sidebar-primary-foreground text-xs font-semibold px-2 py-0.5 rounded-full">
               {badge}
@@ -116,13 +117,13 @@ export const DashboardSidebar = () => {
   return (
     <aside 
       className={cn(
-        "h-screen flex flex-col border-r border-sidebar-border/50 transition-all duration-300 glass-strong",
+        "h-screen flex flex-col border-r border-sidebar-border/80 transition-all duration-300 bg-sidebar text-sidebar-foreground",
         collapsed ? "w-[68px]" : "w-64"
       )}
     >
       {/* Logo */}
       <div className={cn(
-        "h-16 flex items-center border-b border-sidebar-border px-4",
+        "h-16 flex items-center border-b border-sidebar-border/80 px-4",
         collapsed ? "justify-center" : "justify-between"
       )}>
         {!collapsed && (
@@ -132,7 +133,7 @@ export const DashboardSidebar = () => {
           variant="ghost"
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
-          className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          className="text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/80"
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
@@ -204,12 +205,12 @@ export const DashboardSidebar = () => {
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-sidebar bg-status-online" />
+            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-sidebar bg-sidebar-primary" />
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">{displayName}</p>
-              <p className="text-xs text-sidebar-foreground/60">Online</p>
+              <p className="text-xs text-sidebar-foreground/60">{user?.email}</p>
             </div>
           )}
           {!collapsed && (
