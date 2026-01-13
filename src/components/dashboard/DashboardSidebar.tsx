@@ -184,44 +184,51 @@ export const DashboardSidebar = () => {
 
       {/* User Profile */}
       <div className={cn(
-        "border-t border-sidebar-border p-3",
+        "border-t border-sidebar-border/80 p-3",
         collapsed ? "flex flex-col items-center gap-2" : ""
       )}>
-        {/* Theme Toggle */}
         <div className={cn(
-          "flex items-center mb-2",
-          collapsed ? "justify-center" : "justify-end px-2"
+          "flex items-center gap-2 p-2 rounded-lg",
+          collapsed ? "justify-center flex-col" : ""
         )}>
-          <ThemeToggle />
-        </div>
-        
-        <div className={cn(
-          "flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent transition-colors cursor-pointer",
-          collapsed ? "justify-center" : ""
-        )}>
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <Avatar className="h-9 w-9">
               <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-sm">
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-sidebar bg-sidebar-primary" />
           </div>
           {!collapsed && (
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 overflow-hidden">
               <p className="text-sm font-medium text-sidebar-foreground truncate">{displayName}</p>
-              <p className="text-xs text-sidebar-foreground/60">{user?.email}</p>
+              <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
             </div>
           )}
           {!collapsed && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-sidebar-foreground/60 hover:text-sidebar-foreground"
-              onClick={handleSignOut}
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <ThemeToggle />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/80 h-8 w-8"
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          {collapsed && (
+            <div className="flex flex-col items-center gap-1">
+              <ThemeToggle />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/80 h-8 w-8"
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
           )}
         </div>
       </div>
