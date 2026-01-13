@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
+import { PageHeader, HeaderButton } from '@/components/dashboard/PageHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useConversations';
 import { supabase } from '@/integrations/supabase/client';
@@ -417,17 +418,14 @@ const TeamMembers = () => {
       
       <div className="flex-1 flex flex-col min-w-0 overflow-auto">
         {/* Header */}
-        <div className="h-16 shrink-0 border-b border-border/30 flex items-center justify-between px-6 glass sticky top-0 z-10">
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">Team Members</h1>
-            <p className="text-sm text-muted-foreground">Manage your human agents</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={fetchAgents}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <PageHeader 
+          title="Team Members" 
+          description="Manage your human agents"
+        >
+          <HeaderButton variant="outline" size="icon" onClick={fetchAgents}>
+            <RefreshCw className="h-4 w-4" />
+          </HeaderButton>
+        </PageHeader>
 
         {/* Content */}
         <div className="flex-1 p-6">

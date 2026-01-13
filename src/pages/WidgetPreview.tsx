@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { ChatWidget } from '@/components/widget/ChatWidget';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -288,16 +289,10 @@ const WidgetPreview = () => {
     return <div className="flex h-screen bg-gradient-subtle">
         <DashboardSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="glass sticky top-0 z-10 border-b border-border/30">
-            <div className="px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-xl font-bold text-foreground">Widget Customization</h1>
-                  <p className="text-sm text-muted-foreground">Customize and embed your chat widget</p>
-                </div>
-              </div>
-            </div>
-          </header>
+          <PageHeader 
+            title="Widget Customization" 
+            description="Customize and embed your chat widget"
+          />
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -317,20 +312,12 @@ const WidgetPreview = () => {
       <DashboardSidebar />
       <div className="flex-1 flex flex-col overflow-auto">
         {/* Header */}
-        <header className="glass sticky top-0 z-10 border-b border-border/30 shrink-0">
-          <div className="px-6 py-[8px]">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-bold text-foreground">Widget Customization</h1>
-                <p className="text-sm text-muted-foreground">Customize and embed your chat widget</p>
-              </div>
-              <div className="flex items-center gap-4">
-                {/* Property Selector */}
-                <PropertySelector properties={properties} selectedPropertyId={selectedPropertyId} onPropertyChange={handlePropertyChange} onDeleteProperty={deleteProperty} />
-              </div>
-            </div>
-          </div>
-        </header>
+        <PageHeader 
+          title="Widget Customization" 
+          description="Customize and embed your chat widget"
+        >
+          <PropertySelector properties={properties} selectedPropertyId={selectedPropertyId} onPropertyChange={handlePropertyChange} onDeleteProperty={deleteProperty} variant="header" />
+        </PageHeader>
 
         <main className="flex-1 p-6">
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8">

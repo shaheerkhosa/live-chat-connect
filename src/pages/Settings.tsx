@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useConversations';
 import { PropertySelector } from '@/components/PropertySelector';
@@ -87,12 +88,10 @@ const Settings = () => {
       
       <div className="flex-1 flex flex-col min-w-0 overflow-auto">
         {/* Header */}
-        <div className="h-16 shrink-0 border-b border-border/30 flex items-center justify-between px-6 glass sticky top-0 z-10">
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">Settings</h1>
-            <p className="text-sm text-muted-foreground">Manage properties and integrations</p>
-          </div>
-        </div>
+        <PageHeader 
+          title="Settings" 
+          description="Manage properties and integrations"
+        />
 
         {/* Content */}
         <div className="flex-1 p-6">

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
+import { PageHeader } from '@/components/dashboard/PageHeader';
 import { BlogAnalytics } from '@/components/dashboard/BlogAnalytics';
-import { BarChart3, Building2, Loader2 } from 'lucide-react';
+import { Building2, Loader2 } from 'lucide-react';
 import { useConversations } from '@/hooks/useConversations';
 import { PropertySelector } from '@/components/PropertySelector';
 
@@ -22,15 +23,12 @@ const Analytics = () => {
       
       <div className="flex-1 flex flex-col min-w-0 overflow-auto">
         {/* Header */}
-        <div className="h-16 shrink-0 border-b border-border/30 flex items-center justify-between px-6 glass sticky top-0 z-10">
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">Lead Analytics</h1>
-            <p className="text-sm text-muted-foreground">Track blog performance & lead sources</p>
-          </div>
-
-          {/* Property Selector */}
+        <PageHeader 
+          title="Lead Analytics" 
+          description="Track blog performance & lead sources"
+        >
           {loading ? (
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex items-center gap-2 text-sidebar-foreground/60">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span className="text-sm">Loading...</span>
             </div>
@@ -40,9 +38,10 @@ const Analytics = () => {
               selectedPropertyId={selectedPropertyId}
               onPropertyChange={setSelectedPropertyId}
               onDeleteProperty={deleteProperty}
+              variant="header"
             />
           ) : null}
-        </div>
+        </PageHeader>
 
         {/* Content */}
         <div className="flex-1 p-6">
