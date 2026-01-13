@@ -18,10 +18,10 @@ const Analytics = () => {
   }, [properties, selectedPropertyId]);
 
   return (
-    <div className="flex h-screen bg-gradient-subtle">
+    <div className="flex h-screen bg-sidebar">
       <DashboardSidebar />
       
-      <div className="flex-1 flex flex-col min-w-0 overflow-auto">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
         <PageHeader 
           title="Lead Analytics" 
@@ -44,8 +44,9 @@ const Analytics = () => {
         </PageHeader>
 
         {/* Content */}
-        <div className="flex-1 p-6">
-          <div className="max-w-4xl mx-auto">
+        <div className="flex-1 p-2 overflow-auto">
+          <div className="h-full rounded-lg border border-border/30 bg-background dark:bg-background/50 dark:backdrop-blur-sm p-6">
+            <div className="max-w-4xl mx-auto">
             {loading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -61,6 +62,7 @@ const Analytics = () => {
             ) : (
               <BlogAnalytics propertyId={selectedPropertyId} />
             )}
+            </div>
           </div>
         </div>
       </div>

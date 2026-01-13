@@ -413,10 +413,10 @@ const TeamMembers = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-subtle">
+    <div className="flex h-screen bg-sidebar">
       <DashboardSidebar />
       
-      <div className="flex-1 flex flex-col min-w-0 overflow-auto">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
         <PageHeader 
           title="Team Members" 
@@ -428,8 +428,9 @@ const TeamMembers = () => {
         </PageHeader>
 
         {/* Content */}
-        <div className="flex-1 p-6">
-          <div className="max-w-4xl mx-auto">
+        <div className="flex-1 p-2 overflow-auto">
+          <div className="h-full rounded-lg border border-border/30 bg-background dark:bg-background/50 dark:backdrop-blur-sm p-6">
+            <div className="max-w-4xl mx-auto">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -680,6 +681,7 @@ const TeamMembers = () => {
               )}
             </CardContent>
           </Card>
+            </div>
           </div>
         </div>
       </div>

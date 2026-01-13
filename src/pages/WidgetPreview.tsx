@@ -278,7 +278,7 @@ const WidgetPreview = () => {
     setTimeout(() => setCopied(false), 2000);
   };
   if (loading) {
-    return <div className="flex h-screen bg-gradient-subtle">
+    return <div className="flex h-screen bg-sidebar">
         <DashboardSidebar />
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -286,31 +286,33 @@ const WidgetPreview = () => {
       </div>;
   }
   if (properties.length === 0) {
-    return <div className="flex h-screen bg-gradient-subtle">
+    return <div className="flex h-screen bg-sidebar">
         <DashboardSidebar />
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-hidden">
           <PageHeader 
             title="Widget Customization" 
             description="Customize and embed your chat widget"
           />
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h2 className="text-lg font-semibold text-foreground mb-2">No Properties Yet</h2>
-              <p className="text-muted-foreground mb-4">
-                Create a property first to customize your widget.
-              </p>
-              <Link to="/dashboard">
-                <Button>Go to Dashboard</Button>
-              </Link>
+          <div className="flex-1 p-2 overflow-auto">
+            <div className="h-full rounded-lg border border-border/30 bg-background dark:bg-background/50 dark:backdrop-blur-sm flex items-center justify-center">
+              <div className="text-center">
+                <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h2 className="text-lg font-semibold text-foreground mb-2">No Properties Yet</h2>
+                <p className="text-muted-foreground mb-4">
+                  Create a property first to customize your widget.
+                </p>
+                <Link to="/dashboard">
+                  <Button>Go to Dashboard</Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
       </div>;
   }
-  return <div className="flex h-screen bg-gradient-subtle">
+  return <div className="flex h-screen bg-sidebar">
       <DashboardSidebar />
-      <div className="flex-1 flex flex-col overflow-auto">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <PageHeader 
           title="Widget Customization" 
@@ -319,7 +321,8 @@ const WidgetPreview = () => {
           <PropertySelector properties={properties} selectedPropertyId={selectedPropertyId} onPropertyChange={handlePropertyChange} onDeleteProperty={deleteProperty} variant="header" />
         </PageHeader>
 
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-2 overflow-auto">
+          <div className="h-full rounded-lg border border-border/30 bg-background dark:bg-background/50 dark:backdrop-blur-sm p-6">
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8">
           {/* Settings */}
           <div className="space-y-6">
@@ -611,6 +614,7 @@ const WidgetPreview = () => {
             </CardContent>
           </Card>
         </div>
+          </div>
       </main>
       </div>
     </div>;
