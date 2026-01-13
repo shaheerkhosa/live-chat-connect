@@ -103,76 +103,73 @@ const VisitorInfoSidebar = ({
     }
     return <Badge variant="secondary" className="text-xs">{urgency}</Badge>;
   };
-  return <div className={cn("border-l border-border/30 hidden lg:flex flex-col transition-all duration-200 bg-card", isOpen ? "w-64" : "w-10")}>
-      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="flex flex-col h-full">
-        {/* Toggle button */}
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" size="sm" className={cn("h-8 w-full justify-center border-b border-border/30 rounded-none", isOpen && "justify-end px-2")}>
-            {isOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
-        </CollapsibleTrigger>
+  return (
+    <div className={cn("border-l border-border/30 hidden lg:flex flex-col transition-all duration-200 bg-card w-64")}>
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-3 border-b border-border/30">
+          <h4 className="font-medium text-sm text-foreground">Visitor Details</h4>
+          <p className="text-xs text-muted-foreground">
+            {formatDistanceToNow(new Date(visitor.createdAt), { addSuffix: true })}
+          </p>
+        </div>
 
-        <CollapsibleContent className="flex-1 overflow-y-auto">
-          <div className="p-3 border-b border-border/30">
-            <h4 className="font-medium text-sm text-foreground">Visitor Details</h4>
-            <p className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(visitor.createdAt), {
-              addSuffix: true
-            })}
-            </p>
-          </div>
+        {/* Personal Info Section */}
+        <div className="p-3 space-y-1">
+          {visitor.name && <InfoItem icon={User} label="Name" value={visitor.name} />}
+          {visitor.email && <InfoItem icon={Mail} label="Email" value={visitor.email} />}
+          {visitor.phone && <InfoItem icon={Phone} label="Phone" value={visitor.phone} />}
+          {visitor.age && <InfoItem icon={Calendar} label="Age" value={visitor.age} />}
+          {visitor.occupation && <InfoItem icon={Briefcase} label="Work" value={visitor.occupation} />}
+        </div>
 
-          {/* Personal Info Section */}
-          <div className="p-3 space-y-1">
-            {visitor.name && <InfoItem icon={User} label="Name" value={visitor.name} />}
-            {visitor.email && <InfoItem icon={Mail} label="Email" value={visitor.email} />}
-            {visitor.phone && <InfoItem icon={Phone} label="Phone" value={visitor.phone} />}
-            {visitor.age && <InfoItem icon={Calendar} label="Age" value={visitor.age} />}
-            {visitor.occupation && <InfoItem icon={Briefcase} label="Work" value={visitor.occupation} />}
-          </div>
-
-          {/* Treatment Details Section */}
-          {hasTreatmentInfo && <div className="p-3 border-t border-border/30 space-y-1">
-              <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                <Heart className="h-3 w-3" />
-                Treatment Details
-              </p>
-              {visitor.drug_of_choice && <InfoItem icon={Pill} label="Substance" value={visitor.drug_of_choice} />}
-              {visitor.addiction_history && <InfoItem icon={Calendar} label="History" value={visitor.addiction_history} />}
-              {visitor.treatment_interest && <InfoItem icon={Building} label="Seeking" value={visitor.treatment_interest} />}
-              {visitor.insurance_info && <InfoItem icon={Shield} label="Insurance" value={visitor.insurance_info} />}
-              {visitor.urgency_level && <div className="flex items-center gap-2 py-1.5">
-                  <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                  <span className="text-xs text-muted-foreground min-w-[50px]">Urgency:</span>
-                  {getUrgencyBadge(visitor.urgency_level)}
-                </div>}
-            </div>}
-
-          {/* Session Info Section */}
+        {/* Treatment Details Section */}
+        {hasTreatmentInfo && (
           <div className="p-3 border-t border-border/30 space-y-1">
-            <p className="text-xs font-medium text-muted-foreground mb-2">Session Info</p>
-            {visitor.location && <InfoItem icon={MapPin} label="Location" value={visitor.location} />}
-            {visitor.currentPage && <InfoItem icon={Globe} label="Page" value={visitor.currentPage} />}
-            {visitor.browserInfo && <InfoItem icon={Monitor} label="Browser" value={visitor.browserInfo} />}
-          </div>
-
-          {assignedAgent && <div className="p-3 border-t border-border/30">
-              <p className="text-xs text-muted-foreground mb-2">Assigned Agent</p>
-              <div className="flex items-center gap-2">
-                <Avatar className="h-6 w-6">
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                    {assignedAgent.name.split(' ').map((n: string) => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-xs font-medium text-foreground">{assignedAgent.name}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{assignedAgent.status}</p>
-                </div>
+            <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+              <Heart className="h-3 w-3" />
+              Treatment Details
+            </p>
+            {visitor.drug_of_choice && <InfoItem icon={Pill} label="Substance" value={visitor.drug_of_choice} />}
+            {visitor.addiction_history && <InfoItem icon={Calendar} label="History" value={visitor.addiction_history} />}
+            {visitor.treatment_interest && <InfoItem icon={Building} label="Seeking" value={visitor.treatment_interest} />}
+            {visitor.insurance_info && <InfoItem icon={Shield} label="Insurance" value={visitor.insurance_info} />}
+            {visitor.urgency_level && (
+              <div className="flex items-center gap-2 py-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                <span className="text-xs text-muted-foreground min-w-[50px]">Urgency:</span>
+                {getUrgencyBadge(visitor.urgency_level)}
               </div>
-            </div>}
-        </CollapsibleContent>
-      </Collapsible>
-    </div>;
+            )}
+          </div>
+        )}
+
+        {/* Session Info Section */}
+        <div className="p-3 border-t border-border/30 space-y-1">
+          <p className="text-xs font-medium text-muted-foreground mb-2">Session Info</p>
+          {visitor.location && <InfoItem icon={MapPin} label="Location" value={visitor.location} />}
+          {visitor.currentPage && <InfoItem icon={Globe} label="Page" value={visitor.currentPage} />}
+          {visitor.browserInfo && <InfoItem icon={Monitor} label="Browser" value={visitor.browserInfo} />}
+        </div>
+
+        {assignedAgent && (
+          <div className="p-3 border-t border-border/30">
+            <p className="text-xs text-muted-foreground mb-2">Assigned Agent</p>
+            <div className="flex items-center gap-2">
+              <Avatar className="h-6 w-6">
+                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                  {assignedAgent.name.split(' ').map((n: string) => n[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-xs font-medium text-foreground">{assignedAgent.name}</p>
+                <p className="text-xs text-muted-foreground capitalize">{assignedAgent.status}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 export const ChatPanel = ({
   conversation,
