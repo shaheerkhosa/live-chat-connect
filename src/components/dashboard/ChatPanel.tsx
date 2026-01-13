@@ -106,12 +106,6 @@ const VisitorInfoSidebar = ({
   return (
     <div className={cn("border-l border-border/30 hidden lg:flex flex-col transition-all duration-200 bg-card w-64")}>
       <div className="flex-1 overflow-y-auto">
-        <div className="p-4 border-b border-border/30">
-          <h4 className="font-medium text-sm text-foreground">Visitor Details</h4>
-          <p className="text-xs text-muted-foreground">
-            {formatDistanceToNow(new Date(visitor.createdAt), { addSuffix: true })}
-          </p>
-        </div>
 
         {/* Personal Info Section */}
         <div className="p-3 space-y-1">
@@ -250,50 +244,6 @@ export const ChatPanel = ({
   return <div className="flex h-full bg-gradient-subtle">
       {/* Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header - Simplified */}
-        <div className="h-16 px-4 flex items-center justify-between border-b border-border/30 glass-subtle rounded-t-2xl">
-          <div className="flex items-center gap-3 min-w-0">
-            <Avatar className="h-10 w-10 flex-shrink-0">
-              <AvatarFallback className="bg-primary/10 text-primary">
-                {visitorName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <h3 className="font-semibold text-foreground truncate">{visitorName}</h3>
-              <p className="text-xs text-muted-foreground truncate">
-                {visitor.currentPage || 'Browsing'}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className={cn("capitalize text-xs", status === 'active' && "border-status-online text-status-online bg-status-online/10", status === 'pending' && "border-status-away text-status-away bg-status-away/10", status === 'closed' && "border-muted-foreground text-muted-foreground")}>
-              {status}
-            </Badge>
-            {/* Actions Dropdown - All actions in one place */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={handleStartVideoCall} disabled={status === 'closed'}>
-                  <Video className="h-4 w-4 mr-2" />
-                  Start Video Call
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Assign to Agent
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onCloseConversation} disabled={status === 'closed'} className="text-destructive focus:text-destructive">
-                  <Archive className="h-4 w-4 mr-2" />
-                  Close Conversation
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
 
         {/* Messages */}
         <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-background scrollbar-thin">
