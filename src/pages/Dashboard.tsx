@@ -375,7 +375,7 @@ const DashboardContent = () => {
 
         {/* Main Content Row - Wrapped in glass container */}
         <div className="flex flex-1 min-h-0 overflow-hidden p-2 bg-sidebar">
-          <div className="flex flex-1 min-h-0 overflow-hidden rounded-2xl border border-border/30 bg-background/50 backdrop-blur-sm">
+          <div className="flex flex-1 min-h-0 overflow-hidden rounded-2xl border border-border/30 bg-background dark:bg-background/50 dark:backdrop-blur-sm">
             {/* Conversation List Column */}
             <div ref={listRef} className="w-80 border-r border-border/30 flex flex-col shrink-0">
               {/* Search - White/light background */}
