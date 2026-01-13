@@ -372,7 +372,7 @@ const DashboardContent = () => {
 
           {/* Chat Panel Header */}
           <div className="flex-1 px-4 py-3 border-r border-sidebar-border flex items-center justify-between min-w-0">
-            {selectedConversation ? (
+            {selectedConversation && (
               <>
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar className="h-8 w-8 flex-shrink-0">
@@ -426,14 +426,14 @@ const DashboardContent = () => {
                   </DropdownMenu>
                 </div>
               </>
-            ) : (
-              <span className="text-sidebar-foreground/50 text-sm">Select a conversation</span>
             )}
           </div>
 
           {/* Visitor Details Header */}
           <div className="w-64 px-4 py-3 hidden lg:flex items-center shrink-0 mr-2">
-            <h4 className="font-medium text-sm text-sidebar-foreground">Visitor Details</h4>
+            {selectedConversation && (
+              <h4 className="font-medium text-sm text-sidebar-foreground">Visitor Details</h4>
+            )}
           </div>
         </div>
 
