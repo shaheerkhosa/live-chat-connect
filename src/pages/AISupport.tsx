@@ -519,10 +519,7 @@ const AISupport = () => {
       
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <PageHeader 
-          title="AI Support" 
-          description="Configure AI agents and behavior"
-        >
+        <PageHeader title="AI Support">
           <HeaderButton variant="outline" size="icon" onClick={fetchAIAgents}>
             <RefreshCw className="h-4 w-4" />
           </HeaderButton>

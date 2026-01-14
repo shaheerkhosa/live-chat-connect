@@ -418,10 +418,7 @@ const TeamMembers = () => {
       
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <PageHeader 
-          title="Team Members" 
-          description="Manage your human agents"
-        >
+        <PageHeader title="Team Members">
           <HeaderButton variant="outline" size="icon" onClick={fetchAgents}>
             <RefreshCw className="h-4 w-4" />
           </HeaderButton>

@@ -289,10 +289,7 @@ const WidgetPreview = () => {
     return <div className="flex h-screen bg-sidebar">
         <DashboardSidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <PageHeader 
-            title="Widget Customization" 
-            description="Customize and embed your chat widget"
-          />
+          <PageHeader title="Widget Customization" />
           <div className="flex-1 p-2 overflow-hidden">
             <div className="h-full overflow-auto rounded-lg border border-border/30 bg-background dark:bg-background/50 dark:backdrop-blur-sm flex items-center justify-center">
               <div className="text-center">
@@ -314,10 +311,7 @@ const WidgetPreview = () => {
       <DashboardSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <PageHeader 
-          title="Widget Customization" 
-          description="Customize and embed your chat widget"
-        >
+        <PageHeader title="Widget Customization">
           <PropertySelector properties={properties} selectedPropertyId={selectedPropertyId} onPropertyChange={handlePropertyChange} onDeleteProperty={deleteProperty} variant="header" />
         </PageHeader>
 

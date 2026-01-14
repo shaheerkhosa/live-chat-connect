@@ -88,10 +88,7 @@ const Settings = () => {
       
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <PageHeader 
-          title="Settings" 
-          description="Manage properties and integrations"
-        />
+        <PageHeader title="Settings" />
 
         {/* Content */}
         <div className="flex-1 p-2 overflow-hidden">
