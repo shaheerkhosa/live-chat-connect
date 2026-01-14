@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const code = url.searchParams.get("code");
-    const state = url.searchParams.get("state"); // This is the propertyId
+    const state = url.searchParams.get("state"); // This is "propertyId:codeVerifier"
     const error = url.searchParams.get("error");
     const errorDescription = url.searchParams.get("error_description");
 
@@ -32,6 +32,15 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Parse state to get propertyId and codeVerifier
+    const [propertyId, codeVerifier] = state.split(':');
+    if (!propertyId || !codeVerifier) {
+      return new Response(
+        `<html><body><script>window.opener?.postMessage({type:'salesforce-oauth-error',error:'invalid_state'},'*');window.close();</script><p>Invalid state parameter. You can close this window.</p></body></html>`,
+        { headers: { ...corsHeaders, "Content-Type": "text/html" } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -40,7 +49,7 @@ Deno.serve(async (req) => {
     const { data: settings, error: settingsError } = await supabase
       .from("salesforce_settings")
       .select("*")
-      .eq("property_id", state)
+      .eq("property_id", propertyId)
       .single();
 
     if (settingsError || !settings) {
@@ -74,6 +83,7 @@ Deno.serve(async (req) => {
         client_id: clientId,
         client_secret: clientSecret,
         redirect_uri: redirectUri,
+        code_verifier: codeVerifier,
       }),
     });
 
@@ -100,7 +110,7 @@ Deno.serve(async (req) => {
         token_expires_at: expiresAt,
         enabled: true,
       })
-      .eq("property_id", state);
+      .eq("property_id", propertyId);
 
     if (updateError) {
       console.error("Error updating settings:", updateError);
@@ -110,7 +120,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log("Salesforce OAuth successful for property:", state);
+    console.log("Salesforce OAuth successful for property:", propertyId);
 
     return new Response(
       `<html><body><script>window.opener?.postMessage({type:'salesforce-oauth-success'},'*');window.close();</script><p>Connected to Salesforce successfully! You can close this window.</p></body></html>`,

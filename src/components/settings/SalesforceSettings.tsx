@@ -182,6 +182,27 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
     toast.success('Salesforce settings saved');
   };
 
+  // Generate PKCE code verifier and challenge
+  const generatePKCE = async () => {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    const codeVerifier = btoa(String.fromCharCode(...array))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+    
+    const encoder = new TextEncoder();
+    const data = encoder.encode(codeVerifier);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = new Uint8Array(hashBuffer);
+    const codeChallenge = btoa(String.fromCharCode(...hashArray))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+    
+    return { codeVerifier, codeChallenge };
+  };
+
   const handleConnect = async () => {
     if (!config?.client_id || !config?.client_secret) {
       toast.error('Please enter your Client ID and Client Secret first');
@@ -193,35 +214,51 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
 
     setConnecting(true);
 
-    // Salesforce OAuth authorization URL
-    const redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/salesforce-oauth-callback`;
-    const authUrl = new URL('https://login.salesforce.com/services/oauth2/authorize');
-    authUrl.searchParams.set('response_type', 'code');
-    authUrl.searchParams.set('client_id', config.client_id);
-    authUrl.searchParams.set('redirect_uri', redirectUri);
-    authUrl.searchParams.set('scope', 'api refresh_token openid');
-    authUrl.searchParams.set('state', propertyId);
+    try {
+      // Generate PKCE parameters
+      const { codeVerifier, codeChallenge } = await generatePKCE();
+      
+      // Store code verifier in sessionStorage for the callback
+      sessionStorage.setItem(`sf_code_verifier_${propertyId}`, codeVerifier);
 
-    // Open OAuth popup
-    const width = 600;
-    const height = 700;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-    
-    const popup = window.open(
-      authUrl.toString(),
-      'salesforce-oauth',
-      `width=${width},height=${height},left=${left},top=${top},popup=1`
-    );
+      // Salesforce OAuth authorization URL
+      const redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/salesforce-oauth-callback`;
+      const authUrl = new URL('https://login.salesforce.com/services/oauth2/authorize');
+      authUrl.searchParams.set('response_type', 'code');
+      authUrl.searchParams.set('client_id', config.client_id);
+      authUrl.searchParams.set('redirect_uri', redirectUri);
+      authUrl.searchParams.set('scope', 'api refresh_token openid');
+      authUrl.searchParams.set('state', `${propertyId}:${codeVerifier}`);
+      authUrl.searchParams.set('code_challenge', codeChallenge);
+      authUrl.searchParams.set('code_challenge_method', 'S256');
 
-    // Listen for popup close and refetch settings
-    const checkPopup = setInterval(() => {
-      if (!popup || popup.closed) {
-        clearInterval(checkPopup);
-        setConnecting(false);
-        fetchSettings();
-      }
-    }, 500);
+      // Open OAuth popup
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      
+      const popup = window.open(
+        authUrl.toString(),
+        'salesforce-oauth',
+        `width=${width},height=${height},left=${left},top=${top},popup=1`
+      );
+
+      // Listen for popup close and refetch settings
+      const checkPopup = setInterval(() => {
+        if (!popup || popup.closed) {
+          clearInterval(checkPopup);
+          setConnecting(false);
+          fetchSettings();
+          // Clean up stored verifier
+          sessionStorage.removeItem(`sf_code_verifier_${propertyId}`);
+        }
+      }, 500);
+    } catch (error) {
+      console.error('Error initiating OAuth:', error);
+      toast.error('Failed to start OAuth flow');
+      setConnecting(false);
+    }
   };
 
   const addMapping = () => {
