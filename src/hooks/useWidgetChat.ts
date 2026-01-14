@@ -30,6 +30,8 @@ interface PropertySettings {
   auto_escalation_enabled: boolean;
   require_email_before_chat: boolean;
   require_name_before_chat: boolean;
+  require_insurance_card_before_chat: boolean;
+  natural_lead_capture_enabled: boolean;
   proactive_message_enabled: boolean;
   proactive_message: string | null;
   proactive_message_delay_seconds: number;
@@ -55,6 +57,8 @@ const DEFAULT_SETTINGS: PropertySettings = {
   auto_escalation_enabled: true,
   require_email_before_chat: false,
   require_name_before_chat: false,
+  require_insurance_card_before_chat: false,
+  natural_lead_capture_enabled: true,
   proactive_message_enabled: false,
   proactive_message: null,
   proactive_message_delay_seconds: 30,
@@ -178,6 +182,7 @@ async function streamAIResponse({
   personalityPrompt,
   agentName,
   basePrompt,
+  naturalLeadCaptureFields,
 }: {
   messages: { role: 'user' | 'assistant'; content: string }[];
   onDelta: (text: string) => void;
@@ -186,6 +191,7 @@ async function streamAIResponse({
   personalityPrompt?: string | null;
   agentName?: string;
   basePrompt?: string | null;
+  naturalLeadCaptureFields?: string[];
 }) {
   try {
     const resp = await fetch(CHAT_URL, {
@@ -194,7 +200,7 @@ async function streamAIResponse({
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages, personalityPrompt, agentName, basePrompt }),
+      body: JSON.stringify({ messages, personalityPrompt, agentName, basePrompt, naturalLeadCaptureFields }),
     });
 
     if (!resp.ok) {
@@ -349,6 +355,8 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         auto_escalation_enabled,
         require_email_before_chat,
         require_name_before_chat,
+        require_insurance_card_before_chat,
+        natural_lead_capture_enabled,
         proactive_message_enabled,
         proactive_message,
         proactive_message_delay_seconds,
@@ -371,6 +379,8 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         auto_escalation_enabled: data.auto_escalation_enabled ?? DEFAULT_SETTINGS.auto_escalation_enabled,
         require_email_before_chat: data.require_email_before_chat ?? DEFAULT_SETTINGS.require_email_before_chat,
         require_name_before_chat: data.require_name_before_chat ?? DEFAULT_SETTINGS.require_name_before_chat,
+        require_insurance_card_before_chat: data.require_insurance_card_before_chat ?? DEFAULT_SETTINGS.require_insurance_card_before_chat,
+        natural_lead_capture_enabled: data.natural_lead_capture_enabled ?? DEFAULT_SETTINGS.natural_lead_capture_enabled,
         proactive_message_enabled: data.proactive_message_enabled ?? DEFAULT_SETTINGS.proactive_message_enabled,
         proactive_message: data.proactive_message,
         proactive_message_delay_seconds: data.proactive_message_delay_seconds ?? DEFAULT_SETTINGS.proactive_message_delay_seconds,
@@ -378,8 +388,9 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         ai_base_prompt: data.ai_base_prompt ?? null,
       });
 
-      // Check if lead capture is required
-      if (data.require_email_before_chat || data.require_name_before_chat) {
+      // Check if lead capture is required - only if NOT using natural lead capture
+      const naturalEnabled = data.natural_lead_capture_enabled ?? true;
+      if (!naturalEnabled && (data.require_email_before_chat || data.require_name_before_chat)) {
         setRequiresLeadCapture(true);
       }
     }
@@ -764,6 +775,14 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
       return Math.ceil((wordCount / wordsPerSecond) * 1000);
     };
 
+    // Build natural lead capture fields list
+    const naturalLeadCaptureFields: string[] = [];
+    if (settings.natural_lead_capture_enabled) {
+      if (settings.require_name_before_chat) naturalLeadCaptureFields.push('name');
+      if (settings.require_email_before_chat) naturalLeadCaptureFields.push('email');
+      if (settings.require_insurance_card_before_chat) naturalLeadCaptureFields.push('insurance_card');
+    }
+
     if (settings.smart_typing_enabled) {
       // Smart typing: buffer the response, then reveal after calculated time
       await streamAIResponse({
@@ -771,6 +790,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         personalityPrompt: respondingAgent?.personality_prompt,
         agentName: respondingAgent?.name,
         basePrompt: settings.ai_base_prompt,
+        naturalLeadCaptureFields: naturalLeadCaptureFields.length > 0 ? naturalLeadCaptureFields : undefined,
         onDelta: (delta) => {
           aiContent += delta;
           // Don't update UI yet - just buffer
@@ -846,6 +866,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         personalityPrompt: respondingAgent?.personality_prompt,
         agentName: respondingAgent?.name,
         basePrompt: settings.ai_base_prompt,
+        naturalLeadCaptureFields: naturalLeadCaptureFields.length > 0 ? naturalLeadCaptureFields : undefined,
         onDelta: (delta) => {
           aiContent += delta;
           setMessages(prev => {

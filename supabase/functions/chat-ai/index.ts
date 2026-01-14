@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, propertyContext, personalityPrompt, agentName, basePrompt } = await req.json();
+    const { messages, propertyContext, personalityPrompt, agentName, basePrompt, naturalLeadCaptureFields } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {
@@ -44,6 +44,28 @@ Never give medical advice. If crisis, suggest calling a helpline.`;
     // Use custom base prompt if provided, otherwise use default
     const effectiveBasePrompt = basePrompt || defaultBasePrompt;
 
+    // Build natural lead capture instructions if fields are specified
+    let leadCaptureInstructions = '';
+    if (naturalLeadCaptureFields && naturalLeadCaptureFields.length > 0) {
+      const fieldDescriptions: Record<string, string> = {
+        name: 'their name',
+        email: 'their email address',
+        phone: 'their phone number',
+        insurance_card: 'photos of the front and back of their insurance card (let them know they can use the image upload button)',
+      };
+      
+      const fieldsList = naturalLeadCaptureFields
+        .map((f: string) => fieldDescriptions[f] || f)
+        .join(', ');
+      
+      leadCaptureInstructions = `
+
+LEAD CAPTURE: During the conversation, naturally and gently ask for the following information when appropriate: ${fieldsList}. 
+Don't ask for all at once. Work them into the conversation naturally as trust builds. 
+For insurance cards, mention they can tap the image button to upload photos.
+Never pressure. If they seem hesitant, reassure them and move on.`;
+    }
+
     // Build system prompt - combine base prompt with personality if provided
     let systemPrompt: string;
     
@@ -51,12 +73,12 @@ Never give medical advice. If crisis, suggest calling a helpline.`;
       // Use the AI agent's custom personality on top of base prompt
       systemPrompt = `${personalityPrompt}
 
-${effectiveBasePrompt}
+${effectiveBasePrompt}${leadCaptureInstructions}
 
 ${propertyContext ? `Property context: ${propertyContext}` : ''}`;
     } else {
       // Just use the base prompt
-      systemPrompt = `${effectiveBasePrompt}
+      systemPrompt = `${effectiveBasePrompt}${leadCaptureInstructions}
 
 ${propertyContext ? `Property context: ${propertyContext}` : ''}`;
     }

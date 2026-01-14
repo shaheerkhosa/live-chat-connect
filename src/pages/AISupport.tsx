@@ -59,6 +59,8 @@ interface PropertySettings {
   require_email_before_chat: boolean;
   require_name_before_chat: boolean;
   require_phone_before_chat: boolean;
+  require_insurance_card_before_chat: boolean;
+  natural_lead_capture_enabled: boolean;
   proactive_message: string | null;
   proactive_message_delay_seconds: number;
   proactive_message_enabled: boolean;
@@ -172,7 +174,7 @@ const AISupport = () => {
         ai_response_delay_max_ms: data.ai_response_delay_max_ms ?? 2500,
         typing_indicator_min_ms: data.typing_indicator_min_ms ?? 1500,
         typing_indicator_max_ms: data.typing_indicator_max_ms ?? 3000,
-        smart_typing_enabled: data.smart_typing_enabled ?? false,
+        smart_typing_enabled: data.smart_typing_enabled ?? true,
         typing_wpm: data.typing_wpm ?? 90,
         max_ai_messages_before_escalation: data.max_ai_messages_before_escalation ?? 5,
         escalation_keywords: data.escalation_keywords ?? ['crisis', 'emergency', 'suicide', 'help me', 'urgent'],
@@ -180,6 +182,8 @@ const AISupport = () => {
         require_email_before_chat: data.require_email_before_chat ?? false,
         require_name_before_chat: data.require_name_before_chat ?? false,
         require_phone_before_chat: data.require_phone_before_chat ?? false,
+        require_insurance_card_before_chat: data.require_insurance_card_before_chat ?? false,
+        natural_lead_capture_enabled: data.natural_lead_capture_enabled ?? true,
         proactive_message: data.proactive_message ?? null,
         proactive_message_delay_seconds: data.proactive_message_delay_seconds ?? 30,
         proactive_message_enabled: data.proactive_message_enabled ?? false,
@@ -471,6 +475,8 @@ const AISupport = () => {
         require_email_before_chat: settings.require_email_before_chat,
         require_name_before_chat: settings.require_name_before_chat,
         require_phone_before_chat: settings.require_phone_before_chat,
+        require_insurance_card_before_chat: settings.require_insurance_card_before_chat,
+        natural_lead_capture_enabled: settings.natural_lead_capture_enabled,
         proactive_message: settings.proactive_message,
         proactive_message_delay_seconds: settings.proactive_message_delay_seconds,
         proactive_message_enabled: settings.proactive_message_enabled,
@@ -1054,6 +1060,51 @@ const AISupport = () => {
                         require_phone_before_chat: checked,
                       })}
                     />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Require Insurance Card</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Ask for front and back photos of insurance card
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.require_insurance_card_before_chat}
+                      onCheckedChange={(checked) => setSettings({
+                        ...settings,
+                        require_insurance_card_before_chat: checked,
+                      })}
+                    />
+                  </div>
+
+                  <div className="border-t pt-6 mt-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Natural Lead Capture</Label>
+                        <p className="text-sm text-muted-foreground">
+                          AI conversationally asks for selected fields instead of showing a form
+                        </p>
+                      </div>
+                      <Switch
+                        checked={settings.natural_lead_capture_enabled}
+                        onCheckedChange={(checked) => setSettings({
+                          ...settings,
+                          natural_lead_capture_enabled: checked,
+                        })}
+                      />
+                    </div>
+                    {settings.natural_lead_capture_enabled && (
+                      <p className="text-xs text-muted-foreground mt-2 bg-muted/50 p-3 rounded-lg">
+                        When enabled, the AI will naturally ask for the fields you've selected above during conversation. 
+                        No form will be shown. The AI will gently collect: 
+                        {settings.require_name_before_chat && ' name,'}
+                        {settings.require_email_before_chat && ' email,'}
+                        {settings.require_phone_before_chat && ' phone,'}
+                        {settings.require_insurance_card_before_chat && ' insurance card photos'}
+                        {!settings.require_name_before_chat && !settings.require_email_before_chat && !settings.require_phone_before_chat && !settings.require_insurance_card_before_chat && ' (no fields selected)'}
+                      </p>
+                    )}
                   </div>
 
                   {/* Greeting Message */}

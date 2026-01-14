@@ -357,11 +357,13 @@ export type Database = {
           id: string
           max_ai_messages_before_escalation: number | null
           name: string
+          natural_lead_capture_enabled: boolean | null
           offline_message: string | null
           proactive_message: string | null
           proactive_message_delay_seconds: number | null
           proactive_message_enabled: boolean | null
           require_email_before_chat: boolean | null
+          require_insurance_card_before_chat: boolean | null
           require_name_before_chat: boolean | null
           require_phone_before_chat: boolean | null
           smart_typing_enabled: boolean | null
@@ -384,11 +386,13 @@ export type Database = {
           id?: string
           max_ai_messages_before_escalation?: number | null
           name: string
+          natural_lead_capture_enabled?: boolean | null
           offline_message?: string | null
           proactive_message?: string | null
           proactive_message_delay_seconds?: number | null
           proactive_message_enabled?: boolean | null
           require_email_before_chat?: boolean | null
+          require_insurance_card_before_chat?: boolean | null
           require_name_before_chat?: boolean | null
           require_phone_before_chat?: boolean | null
           smart_typing_enabled?: boolean | null
@@ -411,11 +415,13 @@ export type Database = {
           id?: string
           max_ai_messages_before_escalation?: number | null
           name?: string
+          natural_lead_capture_enabled?: boolean | null
           offline_message?: string | null
           proactive_message?: string | null
           proactive_message_delay_seconds?: number | null
           proactive_message_enabled?: boolean | null
           require_email_before_chat?: boolean | null
+          require_insurance_card_before_chat?: boolean | null
           require_name_before_chat?: boolean | null
           require_phone_before_chat?: boolean | null
           smart_typing_enabled?: boolean | null

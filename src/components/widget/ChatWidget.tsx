@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Minimize2, Video, Phone, PhoneOff, Mic, MicOff, VideoOff, User, Mail } from 'lucide-react';
+import { MessageCircle, X, Send, Minimize2, Video, Phone, PhoneOff, Mic, MicOff, VideoOff, User, Mail, ImagePlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useVideoChat } from '@/hooks/useVideoChat';
 import { useWidgetChat } from '@/hooks/useWidgetChat';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ChatWidgetProps {
   propertyId?: string;
@@ -36,8 +37,10 @@ export const ChatWidget = ({
   const [hasIncomingCall, setHasIncomingCall] = useState(false);
   const [leadName, setLeadName] = useState('');
   const [leadEmail, setLeadEmail] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { 
     messages, 
@@ -117,6 +120,56 @@ export const ChatWidget = ({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingImage(true);
+
+    try {
+      for (const file of Array.from(files)) {
+        // Check file type
+        if (!file.type.startsWith('image/')) {
+          continue;
+        }
+
+        // Create a unique filename
+        const timestamp = Date.now();
+        const randomStr = Math.random().toString(36).substring(2, 9);
+        const ext = file.name.split('.').pop() || 'jpg';
+        const fileName = `widget-uploads/${timestamp}-${randomStr}.${ext}`;
+
+        // Upload to Supabase storage
+        const { data, error } = await supabase.storage
+          .from('agent-avatars')
+          .upload(fileName, file, { upsert: true });
+
+        if (error) {
+          console.error('Failed to upload image:', error);
+          continue;
+        }
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('agent-avatars')
+          .getPublicUrl(fileName);
+
+        if (urlData?.publicUrl) {
+          // Send message with image
+          sendMessage(`[Image uploaded: ${file.name}]\n${urlData.publicUrl}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+    }
+
+    setUploadingImage(false);
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -503,7 +556,20 @@ export const ChatWidget = ({
                               }
                           }
                         >
-                          <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                          {/* Check if message contains an image URL */}
+                          {msg.content.includes('[Image uploaded:') && msg.content.includes('https://') ? (
+                            <div className="space-y-2">
+                              <p className="text-sm text-opacity-80">📷 Image uploaded</p>
+                              <img 
+                                src={msg.content.split('\n').pop() || ''} 
+                                alt="Uploaded" 
+                                className="max-w-full rounded-lg max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => window.open(msg.content.split('\n').pop(), '_blank')}
+                              />
+                            </div>
+                          ) : (
+                            <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                          )}
                           <p className={cn(
                             "text-xs mt-1.5",
                             msg.sender_type === 'visitor' ? "text-white/70" : "text-muted-foreground"
@@ -551,7 +617,30 @@ export const ChatWidget = ({
 
               {/* Input */}
               <div className="p-4 border-t border-border/30 bg-card/80 backdrop-blur-sm">
-                <div className="flex gap-3">
+                <div className="flex gap-2">
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  {/* Image upload button */}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="h-12 w-12 flex-shrink-0 flex items-center justify-center border border-border/50 bg-background/80 text-muted-foreground hover:text-foreground hover:bg-background transition-all duration-300 disabled:opacity-50"
+                    style={{ borderRadius: buttonRadius }}
+                    title="Upload image"
+                  >
+                    {uploadingImage ? (
+                      <div className="h-5 w-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <ImagePlus className="h-5 w-5" />
+                    )}
+                  </button>
                   <input
                     ref={inputRef}
                     type="text"
@@ -565,7 +654,7 @@ export const ChatWidget = ({
                   <button
                     onClick={handleSend}
                     disabled={!inputValue.trim()}
-                    className="h-12 w-12 flex items-center justify-center text-white disabled:opacity-50 transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg"
+                    className="h-12 w-12 flex-shrink-0 flex items-center justify-center text-white disabled:opacity-50 transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg"
                     style={{ background: 'var(--widget-primary)', borderRadius: buttonRadius }}
                   >
                     <Send className="h-5 w-5" />
