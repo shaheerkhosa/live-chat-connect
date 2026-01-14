@@ -72,6 +72,7 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
   const [saving, setSaving] = useState(false);
   const [fieldMappings, setFieldMappings] = useState<FieldMapping[]>([]);
   const [showClientSecret, setShowClientSecret] = useState(false);
+  const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -179,6 +180,48 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
     }
 
     toast.success('Salesforce settings saved');
+  };
+
+  const handleConnect = async () => {
+    if (!config?.client_id || !config?.client_secret) {
+      toast.error('Please enter your Client ID and Client Secret first');
+      return;
+    }
+
+    // Save credentials first
+    await handleSave();
+
+    setConnecting(true);
+
+    // Salesforce OAuth authorization URL
+    const redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/salesforce-oauth-callback`;
+    const authUrl = new URL('https://login.salesforce.com/services/oauth2/authorize');
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('client_id', config.client_id);
+    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('scope', 'api refresh_token openid');
+    authUrl.searchParams.set('state', propertyId);
+
+    // Open OAuth popup
+    const width = 600;
+    const height = 700;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    
+    const popup = window.open(
+      authUrl.toString(),
+      'salesforce-oauth',
+      `width=${width},height=${height},left=${left},top=${top},popup=1`
+    );
+
+    // Listen for popup close and refetch settings
+    const checkPopup = setInterval(() => {
+      if (!popup || popup.closed) {
+        clearInterval(checkPopup);
+        setConnecting(false);
+        fetchSettings();
+      }
+    }, 500);
   };
 
   const addMapping = () => {
@@ -303,9 +346,16 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
               <p className="text-sm text-muted-foreground text-center">
                 Enter your OAuth credentials above, save, then connect your account.
               </p>
-              <Button disabled={!config?.client_id || !config?.client_secret}>
-                <Link2 className="mr-2 h-4 w-4" />
-                Connect Salesforce
+              <Button 
+                disabled={!config?.client_id || !config?.client_secret || connecting}
+                onClick={handleConnect}
+              >
+                {connecting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Link2 className="mr-2 h-4 w-4" />
+                )}
+                {connecting ? 'Connecting...' : 'Connect Salesforce'}
               </Button>
             </div>
           )}
