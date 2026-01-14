@@ -63,6 +63,11 @@ const VISITOR_FIELDS = [
   { value: 'location', label: 'Location' },
   { value: 'current_page', label: 'Current Page' },
   { value: 'browser_info', label: 'Browser Info' },
+  { value: 'drug_of_choice', label: 'Drug of Choice' },
+  { value: 'addiction_history', label: 'Addiction History' },
+  { value: 'treatment_interest', label: 'Treatment Interest' },
+  { value: 'insurance_info', label: 'Insurance Info' },
+  { value: 'urgency_level', label: 'Urgency Level' },
   { value: 'conversation_transcript', label: 'Conversation Transcript' },
 ];
 
