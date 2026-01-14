@@ -525,7 +525,7 @@ const AISupport = () => {
           </HeaderButton>
           <HeaderButton onClick={handleSaveSettings} disabled={isSaving}>
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-            Save Settings
+            Save
           </HeaderButton>
         </PageHeader>
 
