@@ -205,13 +205,32 @@ export const ChatPanel = ({
     setIsVideoCallOpen(false);
   };
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
+  const prevMessageCountRef = useRef(0);
+
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
   };
+
+  // Track if user is near bottom (within 100px)
+  const handleScroll = () => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < 100;
+    }
+  };
+
   useEffect(() => {
-    scrollToBottom();
+    const messageCount = conversation?.messages?.length ?? 0;
+    const isNewMessage = messageCount > prevMessageCountRef.current;
+    prevMessageCountRef.current = messageCount;
+
+    // Only auto-scroll if user is near bottom OR it's a new message they just sent
+    if (isNearBottomRef.current || isNewMessage) {
+      scrollToBottom();
+    }
   }, [conversation?.messages]);
   useEffect(() => {
     if (conversation) {
@@ -246,7 +265,7 @@ export const ChatPanel = ({
       <div className="flex-1 flex flex-col min-w-0">
 
         {/* Messages */}
-        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-background scrollbar-thin">
+        <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-4 bg-background scrollbar-thin">
           {messages.map(msg => <MessageBubble key={msg.id} message={msg} isAgent={msg.senderType === 'agent'} />)}
         </div>
 
