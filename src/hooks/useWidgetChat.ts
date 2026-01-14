@@ -928,17 +928,22 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
       extractVisitorInfo(currentVisitorId, conversationHistory);
     }
 
-    // If connected to a real property (not preview mode), also save to database
-    if (propertyId && propertyId !== 'demo' && !isPreview && visitorId) {
+    // Save to database if:
+    // - Connected to a real property (not demo)
+    // - Either NOT in preview mode, OR we're in preview mode but escalation has already happened (test conversation created)
+    const shouldSaveToDb = propertyId && propertyId !== 'demo' && (!isPreview || (isPreview && conversationId && visitorId));
+    const currentVisitorIdForDb = visitorIdRef.current || visitorId;
+    
+    if (shouldSaveToDb && currentVisitorIdForDb) {
       let currentConversationId = conversationId;
 
-      // Create conversation if doesn't exist
-      if (!currentConversationId) {
+      // Create conversation if doesn't exist (only for non-preview mode)
+      if (!currentConversationId && !isPreview) {
         const { data: newConversation, error } = await supabase
           .from('conversations')
           .insert({
             property_id: propertyId,
-            visitor_id: visitorId,
+            visitor_id: currentVisitorIdForDb,
             status: 'pending',
           })
           .select()
@@ -967,7 +972,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
           .from('messages')
           .insert({
             conversation_id: currentConversationId,
-            sender_id: visitorId,
+            sender_id: currentVisitorIdForDb,
             sender_type: 'visitor',
             content,
             sequence_number: nextSeq,
@@ -984,6 +989,11 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
               content: aiContent,
               sequence_number: nextSeq + 1,
             });
+        }
+
+        // Also trigger extraction after saving new messages in preview mode
+        if (isPreview && conversationHistory.length >= 2) {
+          extractVisitorInfo(currentVisitorIdForDb, [...conversationHistory, { role: 'assistant', content: aiContent }]);
         }
       }
     }
