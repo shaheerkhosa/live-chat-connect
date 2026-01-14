@@ -164,6 +164,15 @@
     border-radius: 3px;
   }
 
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Enhanced card styling */
   .card-elevated {
     box-shadow: var(--shadow-md);

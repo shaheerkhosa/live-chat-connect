@@ -291,7 +291,7 @@ const WidgetPreview = () => {
         <div className="flex-1 flex flex-col overflow-hidden">
           <PageHeader title="Widget Customization" />
           <div className="flex-1 p-2 overflow-hidden">
-            <div className="h-full overflow-auto rounded-lg border border-border/30 bg-background dark:bg-background/50 dark:backdrop-blur-sm flex items-center justify-center">
+            <div className="h-full overflow-auto scrollbar-hide rounded-lg border border-border/30 bg-background dark:bg-background/50 dark:backdrop-blur-sm flex items-center justify-center">
               <div className="text-center">
                 <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h2 className="text-lg font-semibold text-foreground mb-2">No Properties Yet</h2>
@@ -316,7 +316,7 @@ const WidgetPreview = () => {
         </PageHeader>
 
         <main className="flex-1 p-2 overflow-hidden">
-          <div className="h-full overflow-auto rounded-lg border border-border/30 bg-background dark:bg-background/50 dark:backdrop-blur-sm p-6">
+          <div className="h-full overflow-auto scrollbar-hide rounded-lg border border-border/30 bg-background dark:bg-background/50 dark:backdrop-blur-sm p-6">
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8">
           {/* Settings */}
           <div className="space-y-6">

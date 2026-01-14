@@ -531,7 +531,7 @@ const AISupport = () => {
 
         {/* Content */}
         <div className="flex-1 p-2 overflow-hidden">
-          <div className="h-full overflow-auto rounded-lg border border-border/30 bg-background dark:bg-background/50 dark:backdrop-blur-sm p-6">
+          <div className="h-full overflow-auto scrollbar-hide rounded-lg border border-border/30 bg-background dark:bg-background/50 dark:backdrop-blur-sm p-6">
             <div className="max-w-4xl mx-auto space-y-6">
           {/* Property Selector for AI Settings */}
           <PropertySelector
