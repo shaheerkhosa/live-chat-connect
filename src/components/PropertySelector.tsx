@@ -94,20 +94,20 @@ export const PropertySelector = ({
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="outline"
+            variant={isHeader ? "default" : "outline"}
             className={cn(
               'justify-between',
-              isHeader && 'border-sidebar-foreground/20 bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+              isHeader && 'bg-primary text-primary-foreground hover:bg-primary/90',
               className
             )}
           >
             <span className="flex items-center gap-2 truncate">
-              {showIcon && <Building2 className={cn("h-4 w-4 shrink-0", isHeader ? "text-sidebar-foreground/60" : "text-muted-foreground")} />}
+              {showIcon && <Building2 className={cn("h-4 w-4 shrink-0", isHeader ? "text-primary-foreground/80" : "text-muted-foreground")} />}
               <span className="truncate">
                 {selectedProperty ? getPropertyLabel(selectedProperty) : 'Select property'}
               </span>
             </span>
-            <ChevronDown className={cn("h-4 w-4 shrink-0 ml-2", isHeader ? "text-sidebar-foreground/60" : "text-muted-foreground")} />
+            <ChevronDown className={cn("h-4 w-4 shrink-0 ml-2", isHeader ? "text-primary-foreground/80" : "text-muted-foreground")} />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[280px]">
