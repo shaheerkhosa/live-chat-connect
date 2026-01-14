@@ -27,9 +27,12 @@ const queryClient = new QueryClient();
 
 // Route guard for clients only
 const RequireClient = ({ children }: { children: React.ReactNode }) => {
-  const { isClient, isAdmin, loading } = useAuth();
+  const { isClient, isAdmin, loading, role } = useAuth();
   
   if (loading) return null;
+  
+  // Wait for role to load before redirecting
+  if (role === null) return null;
   
   if (!isClient && !isAdmin) {
     return <Navigate to="/conversations" replace />;
