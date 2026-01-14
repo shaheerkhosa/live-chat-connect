@@ -30,6 +30,7 @@ interface PropertySettings {
   auto_escalation_enabled: boolean;
   require_email_before_chat: boolean;
   require_name_before_chat: boolean;
+  require_phone_before_chat: boolean;
   require_insurance_card_before_chat: boolean;
   natural_lead_capture_enabled: boolean;
   proactive_message_enabled: boolean;
@@ -57,6 +58,7 @@ const DEFAULT_SETTINGS: PropertySettings = {
   auto_escalation_enabled: true,
   require_email_before_chat: false,
   require_name_before_chat: false,
+  require_phone_before_chat: false,
   require_insurance_card_before_chat: false,
   natural_lead_capture_enabled: true,
   proactive_message_enabled: false,
@@ -355,6 +357,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         auto_escalation_enabled,
         require_email_before_chat,
         require_name_before_chat,
+        require_phone_before_chat,
         require_insurance_card_before_chat,
         natural_lead_capture_enabled,
         proactive_message_enabled,
@@ -379,6 +382,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         auto_escalation_enabled: data.auto_escalation_enabled ?? DEFAULT_SETTINGS.auto_escalation_enabled,
         require_email_before_chat: data.require_email_before_chat ?? DEFAULT_SETTINGS.require_email_before_chat,
         require_name_before_chat: data.require_name_before_chat ?? DEFAULT_SETTINGS.require_name_before_chat,
+        require_phone_before_chat: data.require_phone_before_chat ?? DEFAULT_SETTINGS.require_phone_before_chat,
         require_insurance_card_before_chat: data.require_insurance_card_before_chat ?? DEFAULT_SETTINGS.require_insurance_card_before_chat,
         natural_lead_capture_enabled: data.natural_lead_capture_enabled ?? DEFAULT_SETTINGS.natural_lead_capture_enabled,
         proactive_message_enabled: data.proactive_message_enabled ?? DEFAULT_SETTINGS.proactive_message_enabled,
@@ -780,6 +784,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     if (settings.natural_lead_capture_enabled) {
       if (settings.require_name_before_chat) naturalLeadCaptureFields.push('name');
       if (settings.require_email_before_chat) naturalLeadCaptureFields.push('email');
+      if (settings.require_phone_before_chat) naturalLeadCaptureFields.push('phone');
       if (settings.require_insurance_card_before_chat) naturalLeadCaptureFields.push('insurance_card');
     }
 
