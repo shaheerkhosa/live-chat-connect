@@ -25,7 +25,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<AppRole | null>(null);
 
+  const [roleLoading, setRoleLoading] = useState(false);
+
   const fetchUserRole = async (userId: string) => {
+    setRoleLoading(true);
     const { data } = await supabase
       .from('user_roles')
       .select('role')
@@ -35,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data) {
       setRole(data.role as AppRole);
     }
+    setRoleLoading(false);
   };
 
   useEffect(() => {
@@ -119,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         session,
-        loading,
+        loading: loading || roleLoading,
         role,
         isAdmin: role === 'admin',
         isClient: role === 'client',
