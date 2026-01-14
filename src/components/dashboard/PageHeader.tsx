@@ -33,7 +33,7 @@ export const HeaderButton = ({
   ...props 
 }: React.ComponentProps<typeof Button> & { variant?: 'default' | 'outline' | 'ghost' }) => {
   const variantClasses = {
-    default: 'bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90',
+    default: 'bg-primary text-primary-foreground hover:bg-primary/90',
     outline: 'border-sidebar-foreground/20 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground bg-transparent',
     ghost: 'text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent',
   };
