@@ -51,7 +51,7 @@ Never give medical advice. If crisis, suggest calling a helpline.`;
         name: 'their name',
         email: 'their email address',
         phone: 'their phone number',
-        insurance_card: 'photos of the front and back of their insurance card (let them know they can use the image upload button)',
+        insurance_card: 'a photo of their insurance card (front and back) - mention they can tap the image button to upload',
       };
       
       const fieldsList = naturalLeadCaptureFields
@@ -60,10 +60,15 @@ Never give medical advice. If crisis, suggest calling a helpline.`;
       
       leadCaptureInstructions = `
 
-LEAD CAPTURE: During the conversation, naturally and gently ask for the following information when appropriate: ${fieldsList}. 
-Don't ask for all at once. Work them into the conversation naturally as trust builds. 
-For insurance cards, mention they can tap the image button to upload photos.
-Never pressure. If they seem hesitant, reassure them and move on.`;
+CRITICAL - LEAD CAPTURE PRIORITY:
+Your primary goal is to collect: ${fieldsList}.
+After listening to what the visitor says and giving a short helpful response, ask for ONE of these pieces of information.
+Ask for each field in SEPARATE messages, not all at once.
+Be warm and natural. Example flow:
+- First response: Address their concern briefly, then ask for their name
+- Next response: Thank them, help a bit more, then ask for email or phone
+- Continue until you have all the information
+Never pressure. If hesitant, reassure and try again later.`;
     }
 
     // Build system prompt - combine base prompt with personality if provided
