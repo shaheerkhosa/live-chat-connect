@@ -3,12 +3,11 @@ import { Button } from '@/components/ui/button';
 
 interface PageHeaderProps {
   title: string;
-  description?: string;
   children?: React.ReactNode;
   className?: string;
 }
 
-export const PageHeader = ({ title, description, children, className }: PageHeaderProps) => {
+export const PageHeader = ({ title, children, className }: PageHeaderProps) => {
   return (
     <div 
       className={cn(
@@ -17,12 +16,7 @@ export const PageHeader = ({ title, description, children, className }: PageHead
         className
       )}
     >
-      <div>
-        <h1 className="text-xl font-semibold text-sidebar-foreground">{title}</h1>
-        {description && (
-          <p className="text-sm text-sidebar-foreground/60">{description}</p>
-        )}
-      </div>
+      <h1 className="text-xl font-semibold text-sidebar-foreground">{title}</h1>
       {children && (
         <div className="flex items-center gap-2">
           {children}
