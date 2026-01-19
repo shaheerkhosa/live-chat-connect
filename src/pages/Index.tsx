@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { ChatWidget } from '@/components/widget/ChatWidget';
 import { useAuth } from '@/hooks/useAuth';
 import scaledBotLogo from '@/assets/scaled-bot-logo.png';
-import therapistHero from '@/assets/therapist-hero.jpg';
 
 const features = [
   {
@@ -94,47 +93,32 @@ const Index = () => {
       {/* Hero */}
       <section className="py-20 lg:py-32">
         <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-            {/* Text Content */}
-            <div className="text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 bg-accent/50 text-accent-foreground px-4 py-2 rounded-full text-sm font-medium mb-6">
-                <Zap className="h-4 w-4" />
-                Internal Live Chat Tool
-              </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-                Connect with your visitors
-                <span className="block text-primary">in real-time</span>
-              </h1>
-              <p className="text-xl text-muted-foreground mb-10 max-w-2xl">
-                A multi-tenant live chat system for your websites. Create properties, 
-                assign agents, and start chatting with visitors instantly.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link to={getDashboardRoute()}>
-                  <Button size="lg" className="chat-gradient text-primary-foreground hover:opacity-90 gap-2">
-                    Open Dashboard
-                    <ArrowRight className="h-5 w-5" />
-                  </Button>
-                </Link>
-                <Link to="/widget-preview">
-                  <Button size="lg" variant="outline" className="gap-2">
-                    <Code className="h-5 w-5" />
-                    View Widget Demo
-                  </Button>
-                </Link>
-              </div>
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 bg-accent/50 text-accent-foreground px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <Zap className="h-4 w-4" />
+              Internal Live Chat Tool
             </div>
-            
-            {/* Therapist Image */}
-            <div className="flex justify-center lg:justify-end">
-              <div className="relative">
-                <div className="absolute inset-0 bg-primary/20 rounded-3xl blur-3xl transform -rotate-6" />
-                <img 
-                  src={therapistHero} 
-                  alt="Compassionate therapist in a calming office setting" 
-                  className="relative rounded-3xl shadow-2xl max-w-md w-full border border-border/50"
-                />
-              </div>
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
+              Connect with your visitors
+              <span className="block text-primary">in real-time</span>
+            </h1>
+            <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+              A multi-tenant live chat system for your websites. Create properties, 
+              assign agents, and start chatting with visitors instantly.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to={getDashboardRoute()}>
+                <Button size="lg" className="chat-gradient text-primary-foreground hover:opacity-90 gap-2">
+                  Open Dashboard
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Link to="/widget-preview">
+                <Button size="lg" variant="outline" className="gap-2">
+                  <Code className="h-5 w-5" />
+                  View Widget Demo
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
