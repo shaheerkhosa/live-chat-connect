@@ -23,6 +23,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useConversations';
 import { useSidebarState } from '@/hooks/useSidebarState';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface SidebarItemProps {
   to: string;
@@ -36,7 +42,7 @@ const SidebarItem = ({ to, icon: Icon, label, badge, collapsed }: SidebarItemPro
   const location = useLocation();
   const isActive = location.pathname === to;
 
-  return (
+  const linkContent = (
     <NavLink
       to={to}
       className={cn(
@@ -70,6 +76,22 @@ const SidebarItem = ({ to, icon: Icon, label, badge, collapsed }: SidebarItemPro
       )}
     </NavLink>
   );
+
+  if (collapsed) {
+    return (
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger asChild>
+          {linkContent}
+        </TooltipTrigger>
+        <TooltipContent side="right" className="font-medium">
+          {label}
+          {badge && badge > 0 && ` (${badge})`}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return linkContent;
 };
 
 const SidebarSection = ({ title, children, collapsed }: { title: string; children: React.ReactNode; collapsed: boolean }) => (
@@ -115,123 +137,166 @@ export const DashboardSidebar = () => {
   };
 
   return (
-    <aside 
-      className={cn(
-        "h-screen flex flex-col transition-all duration-300 bg-sidebar text-sidebar-foreground",
-        collapsed ? "w-[68px]" : "w-64"
-      )}
-    >
-      {/* Logo */}
-      <div className={cn(
-        "h-16 flex items-center border-b border-sidebar-border/80 px-4",
-        collapsed ? "justify-center" : "justify-between"
-      )}>
-        {!collapsed && (
-          <span className="font-bold text-lg text-sidebar-foreground">Scaled Bot</span>
+    <TooltipProvider>
+      <aside 
+        className={cn(
+          "h-screen flex flex-col transition-all duration-300 bg-sidebar text-sidebar-foreground",
+          collapsed ? "w-[68px]" : "w-64"
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCollapsed(!collapsed)}
-          className="text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/80"
-        >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </Button>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-6 scrollbar-thin">
-        {/* Inbox - Available to clients and admins */}
-        {(isClient || isAdmin) && (
-          <SidebarSection title="Inbox" collapsed={collapsed}>
-            <SidebarItem to="/dashboard" icon={Inbox} label="All Conversations" badge={badgeCounts.all > 0 ? badgeCounts.all : undefined} collapsed={collapsed} />
-            <SidebarItem to="/dashboard/active" icon={MessageSquare} label="Active" badge={badgeCounts.active > 0 ? badgeCounts.active : undefined} collapsed={collapsed} />
-            <SidebarItem to="/dashboard/closed" icon={Archive} label="Closed" collapsed={collapsed} />
-          </SidebarSection>
-        )}
-
-        {/* Manage - Available to clients and admins */}
-        {(isClient || isAdmin) && (
-          <SidebarSection title="Manage" collapsed={collapsed}>
-            <SidebarItem to="/dashboard/team" icon={Users} label="Team Members" collapsed={collapsed} />
-            <SidebarItem to="/dashboard/ai-support" icon={Bot} label="AI Support" collapsed={collapsed} />
-            <SidebarItem to="/dashboard/analytics" icon={BarChart3} label="Analytics" collapsed={collapsed} />
-          </SidebarSection>
-        )}
-
-        {/* Setup - Available to clients and admins */}
-        {(isClient || isAdmin) && (
-          <SidebarSection title="Setup" collapsed={collapsed}>
-            <SidebarItem to="/dashboard/widget" icon={Code} label="Widget Code" collapsed={collapsed} />
-            <SidebarItem to="/dashboard/settings" icon={Settings} label="Settings" collapsed={collapsed} />
-          </SidebarSection>
-        )}
-
-        {/* Support */}
-        {(isClient || isAdmin) && (
-          <SidebarSection title="Support" collapsed={collapsed}>
-            <SidebarItem to="/dashboard/support" icon={LifeBuoy} label="Get Help" collapsed={collapsed} />
-          </SidebarSection>
-        )}
-
-        {/* Dev Tools */}
-        {(isClient || isAdmin) && (
-          <SidebarSection title="Dev" collapsed={collapsed}>
-            <SidebarItem to="/onboarding?dev=1" icon={FlaskConical} label="Test Onboarding" collapsed={collapsed} />
-          </SidebarSection>
-        )}
-      </nav>
-
-      {/* User Profile */}
-      <div className={cn(
-        "border-t border-sidebar-border/80 p-3",
-        collapsed ? "flex flex-col items-center gap-2" : ""
-      )}>
+      >
+        {/* Logo */}
         <div className={cn(
-          "flex items-center gap-2 p-2 rounded-lg",
-          collapsed ? "justify-center flex-col" : ""
+          "h-16 flex items-center border-b border-sidebar-border/80 px-4",
+          collapsed ? "justify-center" : "justify-between"
         )}>
-          <div className="relative flex-shrink-0">
-            <Avatar className="h-9 w-9">
-              <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-sm">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </div>
           {!collapsed && (
-            <div className="flex-1 min-w-0 overflow-hidden">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">{displayName}</p>
-              <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
-            </div>
+            <span className="font-bold text-lg text-sidebar-foreground">Scaled Bot</span>
           )}
-          {!collapsed && (
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <ThemeToggle />
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/80 h-8 w-8"
-                onClick={handleSignOut}
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCollapsed(!collapsed)}
+                className="text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/80"
               >
-                <LogOut className="h-4 w-4" />
+                {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
               </Button>
-            </div>
-          )}
-          {collapsed && (
-            <div className="flex flex-col items-center gap-1">
-              <ThemeToggle />
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/80 h-8 w-8"
-                onClick={handleSignOut}
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+            </TooltipTrigger>
+            {collapsed && (
+              <TooltipContent side="right">
+                Expand sidebar
+              </TooltipContent>
+            )}
+          </Tooltip>
         </div>
-      </div>
-    </aside>
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-6 scrollbar-thin">
+          {/* Inbox - Available to clients and admins */}
+          {(isClient || isAdmin) && (
+            <SidebarSection title="Inbox" collapsed={collapsed}>
+              <SidebarItem to="/dashboard" icon={Inbox} label="All Conversations" badge={badgeCounts.all > 0 ? badgeCounts.all : undefined} collapsed={collapsed} />
+              <SidebarItem to="/dashboard/active" icon={MessageSquare} label="Active" badge={badgeCounts.active > 0 ? badgeCounts.active : undefined} collapsed={collapsed} />
+              <SidebarItem to="/dashboard/closed" icon={Archive} label="Closed" collapsed={collapsed} />
+            </SidebarSection>
+          )}
+
+          {/* Manage - Available to clients and admins */}
+          {(isClient || isAdmin) && (
+            <SidebarSection title="Manage" collapsed={collapsed}>
+              <SidebarItem to="/dashboard/team" icon={Users} label="Team Members" collapsed={collapsed} />
+              <SidebarItem to="/dashboard/ai-support" icon={Bot} label="AI Support" collapsed={collapsed} />
+              <SidebarItem to="/dashboard/analytics" icon={BarChart3} label="Analytics" collapsed={collapsed} />
+            </SidebarSection>
+          )}
+
+          {/* Setup - Available to clients and admins */}
+          {(isClient || isAdmin) && (
+            <SidebarSection title="Setup" collapsed={collapsed}>
+              <SidebarItem to="/dashboard/widget" icon={Code} label="Widget Code" collapsed={collapsed} />
+              <SidebarItem to="/dashboard/settings" icon={Settings} label="Settings" collapsed={collapsed} />
+            </SidebarSection>
+          )}
+
+          {/* Support */}
+          {(isClient || isAdmin) && (
+            <SidebarSection title="Support" collapsed={collapsed}>
+              <SidebarItem to="/dashboard/support" icon={LifeBuoy} label="Get Help" collapsed={collapsed} />
+            </SidebarSection>
+          )}
+
+          {/* Dev Tools */}
+          {(isClient || isAdmin) && (
+            <SidebarSection title="Dev" collapsed={collapsed}>
+              <SidebarItem to="/onboarding?dev=1" icon={FlaskConical} label="Test Onboarding" collapsed={collapsed} />
+            </SidebarSection>
+          )}
+        </nav>
+
+        {/* User Profile */}
+        <div className={cn(
+          "border-t border-sidebar-border/80 p-3",
+          collapsed ? "flex flex-col items-center gap-2" : ""
+        )}>
+          <div className={cn(
+            "flex items-center gap-2 p-2 rounded-lg",
+            collapsed ? "justify-center flex-col" : ""
+          )}>
+            <div className="relative flex-shrink-0">
+              {collapsed ? (
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <Avatar className="h-9 w-9 cursor-default">
+                      <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-sm">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p className="font-medium">{displayName}</p>
+                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Avatar className="h-9 w-9">
+                  <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-sm">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+            </div>
+            {!collapsed && (
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">{displayName}</p>
+                <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
+              </div>
+            )}
+            {!collapsed && (
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <ThemeToggle />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/80 h-8 w-8"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            {collapsed && (
+              <div className="flex flex-col items-center gap-1">
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <ThemeToggle />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    Toggle theme
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/80 h-8 w-8"
+                      onClick={handleSignOut}
+                    >
+                      <LogOut className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    Sign out
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            )}
+          </div>
+        </div>
+      </aside>
+    </TooltipProvider>
   );
 };
