@@ -16,8 +16,9 @@ import Auth from "./pages/Auth";
 import AdminDashboard from "./pages/AdminDashboard";
 import AgentDashboard from "./pages/AgentDashboard";
 import Onboarding from "./pages/Onboarding";
-import Settings from "./pages/Settings";
 import Support from "./pages/Support";
+import Salesforce from "./pages/Salesforce";
+import Notifications from "./pages/Notifications";
 import SlackApp from "./pages/SlackApp";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -68,7 +69,8 @@ const AppRoutes = () => {
       <Route path="/dashboard/ai-support" element={<RequireClient><AISupport /></RequireClient>} />
       <Route path="/dashboard/analytics" element={<RequireClient><Analytics /></RequireClient>} />
       <Route path="/dashboard/widget" element={<RequireClient><WidgetPreview /></RequireClient>} />
-      <Route path="/dashboard/settings" element={<RequireClient><Settings /></RequireClient>} />
+      <Route path="/dashboard/salesforce" element={<RequireClient><Salesforce /></RequireClient>} />
+      <Route path="/dashboard/notifications" element={<RequireClient><Notifications /></RequireClient>} />
       <Route path="/dashboard/support" element={<RequireClient><Support /></RequireClient>} />
       
       <Route path="/widget-preview" element={<WidgetPreview />} />

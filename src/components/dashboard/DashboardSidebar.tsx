@@ -3,7 +3,6 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   MessageSquare,
   Users, 
-  Settings, 
   BarChart3, 
   Code, 
   LogOut,
@@ -13,7 +12,9 @@ import {
   Archive,
   FlaskConical,
   LifeBuoy,
-  Bot
+  Bot,
+  Bell,
+  Cloud
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -195,7 +196,14 @@ export const DashboardSidebar = () => {
           {(isClient || isAdmin) && (
             <SidebarSection title="Setup" collapsed={collapsed}>
               <SidebarItem to="/dashboard/widget" icon={Code} label="Widget Code" collapsed={collapsed} />
-              <SidebarItem to="/dashboard/settings" icon={Settings} label="Settings" collapsed={collapsed} />
+            </SidebarSection>
+          )}
+
+          {/* Integrations - Available to clients and admins */}
+          {(isClient || isAdmin) && (
+            <SidebarSection title="Integrations" collapsed={collapsed}>
+              <SidebarItem to="/dashboard/salesforce" icon={Cloud} label="Salesforce" collapsed={collapsed} />
+              <SidebarItem to="/dashboard/notifications" icon={Bell} label="Notifications" collapsed={collapsed} />
             </SidebarSection>
           )}
 
