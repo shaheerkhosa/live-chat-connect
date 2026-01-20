@@ -300,21 +300,6 @@ const DashboardContent = () => {
                     </div>
                   </PopoverContent>
                 </Popover>
-
-                {/* More Options Menu */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-sidebar-foreground/60 hover:bg-sidebar-accent">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleCreateTestConversation}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Test Conversation
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
             </div>
           </div>
