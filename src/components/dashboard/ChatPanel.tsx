@@ -275,6 +275,17 @@ export const ChatPanel = ({
       handleSend();
     }
   };
+  const chatAreaRef = useRef<HTMLDivElement>(null);
+  
+  useLayoutEffect(() => {
+    if (!chatAreaRef.current || !conversation) return;
+    gsap.fromTo(
+      chatAreaRef.current,
+      { opacity: 0 },
+      { opacity: 1, duration: 0.3, ease: 'power2.out' }
+    );
+  }, [conversation?.id]);
+
   if (!conversation) {
     return <EmptyState />;
   }
@@ -286,16 +297,6 @@ export const ChatPanel = ({
   } = conversation;
   const visitorName = visitor.name || `Visitor ${visitor.sessionId.slice(-4)}`;
   const assignedAgent = assignedAgentId ? mockAgents.find(a => a.id === assignedAgentId) : null;
-  const chatAreaRef = useRef<HTMLDivElement>(null);
-  
-  useLayoutEffect(() => {
-    if (!chatAreaRef.current) return;
-    gsap.fromTo(
-      chatAreaRef.current,
-      { opacity: 0 },
-      { opacity: 1, duration: 0.3, ease: 'power2.out' }
-    );
-  }, [conversation?.id]);
 
   return <div className="flex h-full bg-gradient-subtle">
       {/* Chat Area */}
