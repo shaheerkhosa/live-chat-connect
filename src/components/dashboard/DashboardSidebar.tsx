@@ -14,7 +14,8 @@ import {
   LifeBuoy,
   Bot,
   Bell,
-  Cloud
+  Cloud,
+  BookOpen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -211,6 +212,7 @@ export const DashboardSidebar = () => {
           {(isClient || isAdmin) && (
             <SidebarSection title="Support" collapsed={collapsed}>
               <SidebarItem to="/dashboard/support" icon={LifeBuoy} label="Get Help" collapsed={collapsed} />
+              <SidebarItem to="/documentation" icon={BookOpen} label="Documentation" collapsed={collapsed} />
             </SidebarSection>
           )}
 
