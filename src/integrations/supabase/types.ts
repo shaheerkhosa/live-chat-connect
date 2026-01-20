@@ -694,6 +694,7 @@ export type Database = {
           current_page: string | null
           drug_of_choice: string | null
           email: string | null
+          gclid: string | null
           id: string
           insurance_info: string | null
           location: string | null
@@ -713,6 +714,7 @@ export type Database = {
           current_page?: string | null
           drug_of_choice?: string | null
           email?: string | null
+          gclid?: string | null
           id?: string
           insurance_info?: string | null
           location?: string | null
@@ -732,6 +734,7 @@ export type Database = {
           current_page?: string | null
           drug_of_choice?: string | null
           email?: string | null
+          gclid?: string | null
           id?: string
           insurance_info?: string | null
           location?: string | null

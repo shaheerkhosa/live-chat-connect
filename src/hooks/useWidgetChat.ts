@@ -102,6 +102,14 @@ const getPageInfo = () => ({
   pageTitle: document.title,
 });
 
+// Extract GCLID and other tracking parameters from URL
+const getTrackingParams = () => {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    gclid: params.get('gclid') || null, // Google Click ID
+  };
+};
+
 const randomInRange = (min: number, max: number): number => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
@@ -583,6 +591,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
 
     // Create visitor if doesn't exist
     if (!visitor) {
+      const trackingParams = getTrackingParams();
       const { data: newVisitor, error } = await supabase
         .from('visitors')
         .insert({
@@ -590,6 +599,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
           session_id: sessionId,
           browser_info: getBrowserInfo(),
           current_page: window.location.pathname,
+          gclid: trackingParams.gclid,
         })
         .select()
         .single();

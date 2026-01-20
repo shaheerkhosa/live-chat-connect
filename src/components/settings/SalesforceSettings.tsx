@@ -53,6 +53,7 @@ const VISITOR_FIELDS = [
   { value: 'location', label: 'Location' },
   { value: 'current_page', label: 'Current Page' },
   { value: 'browser_info', label: 'Browser Info' },
+  { value: 'gclid', label: 'Google Click ID (GCLID)' },
   { value: 'drug_of_choice', label: 'Drug of Choice' },
   { value: 'addiction_history', label: 'Addiction History' },
   { value: 'treatment_interest', label: 'Treatment Interest' },

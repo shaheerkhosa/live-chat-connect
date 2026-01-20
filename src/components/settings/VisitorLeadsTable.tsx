@@ -26,6 +26,7 @@ interface Visitor {
   email: string | null;
   phone: string | null;
   location: string | null;
+  gclid: string | null;
   drug_of_choice: string | null;
   treatment_interest: string | null;
   insurance_info: string | null;
