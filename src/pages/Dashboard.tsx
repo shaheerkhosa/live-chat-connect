@@ -19,6 +19,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SidebarStateProvider, useSidebarState } from '@/hooks/useSidebarState';
+import { InfoIndicator } from '@/components/docs/InfoIndicator';
 type FilterStatus = 'all' | 'active' | 'closed';
 
 // Convert DB conversation to UI conversation format
@@ -269,7 +270,13 @@ const DashboardContent = () => {
           {/* Conversation List Header */}
           <div className="w-80 px-4 py-3 border-r border-sidebar-border shrink-0">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-sidebar-foreground">{getStatusTitle()}</h2>
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-lg font-semibold text-sidebar-foreground">{getStatusTitle()}</h2>
+                <InfoIndicator 
+                  to="/documentation/inbox/overview" 
+                  variant="header"
+                />
+              </div>
               <div className="flex items-center gap-1">
                 {totalUnread > 0 && <span className="text-xs text-sidebar-primary font-medium bg-sidebar-primary/20 px-2 py-0.5 rounded-full mr-1">
                     {totalUnread}
