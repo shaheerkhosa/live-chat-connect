@@ -10,12 +10,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Globe, 
   Plus,
   Loader2,
+  Settings,
+  Users,
 } from 'lucide-react';
 import { SalesforceSettings } from '@/components/settings/SalesforceSettings';
+import { VisitorLeadsTable } from '@/components/settings/VisitorLeadsTable';
 import {
   Dialog,
   DialogContent,
@@ -160,7 +164,26 @@ const Salesforce = () => {
               </Card>
 
               {selectedPropertyId && (
-                <SalesforceSettings propertyId={selectedPropertyId} />
+                <Tabs defaultValue="leads" className="space-y-6">
+                  <TabsList>
+                    <TabsTrigger value="leads" className="gap-2">
+                      <Users className="h-4 w-4" />
+                      Visitor Leads
+                    </TabsTrigger>
+                    <TabsTrigger value="settings" className="gap-2">
+                      <Settings className="h-4 w-4" />
+                      Settings
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="leads">
+                    <VisitorLeadsTable propertyId={selectedPropertyId} />
+                  </TabsContent>
+                  
+                  <TabsContent value="settings">
+                    <SalesforceSettings propertyId={selectedPropertyId} />
+                  </TabsContent>
+                </Tabs>
               )}
 
               {properties.length === 0 && (
