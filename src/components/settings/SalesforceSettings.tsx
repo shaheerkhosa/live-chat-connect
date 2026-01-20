@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Link2, Unlink, Save, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Link2, Unlink, Save, Plus, Trash2, Eye, EyeOff, RefreshCw } from 'lucide-react';
 
 interface SalesforceSettingsProps {
   propertyId: string;
@@ -36,24 +36,14 @@ interface SalesforceConfig {
   client_secret: string;
 }
 
-const SALESFORCE_LEAD_FIELDS = [
-  'FirstName',
-  'LastName',
-  'Email',
-  'Phone',
-  'Company',
-  'Title',
-  'Description',
-  'LeadSource',
-  'Website',
-  'Industry',
-  'Street',
-  'City',
-  'State',
-  'PostalCode',
-  'Country',
-];
+interface SalesforceField {
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+}
 
+// Visitor fields collected by the chatbot
 const VISITOR_FIELDS = [
   { value: 'name', label: 'Name' },
   { value: 'email', label: 'Email' },
@@ -78,10 +68,38 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
   const [fieldMappings, setFieldMappings] = useState<FieldMapping[]>([]);
   const [showClientSecret, setShowClientSecret] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [salesforceFields, setSalesforceFields] = useState<SalesforceField[]>([]);
+  const [loadingFields, setLoadingFields] = useState(false);
 
   useEffect(() => {
     fetchSettings();
   }, [propertyId]);
+
+  // Fetch Salesforce Lead fields when connected
+  useEffect(() => {
+    if (config?.instance_url) {
+      fetchSalesforceFields();
+    }
+  }, [config?.instance_url]);
+
+  const fetchSalesforceFields = async () => {
+    setLoadingFields(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('salesforce-describe-lead', {
+        body: { propertyId },
+      });
+
+      if (error) {
+        console.error('Error fetching Salesforce fields:', error);
+        toast.error('Failed to fetch Salesforce Lead fields');
+      } else if (data?.fields) {
+        setSalesforceFields(data.fields);
+      }
+    } catch (err) {
+      console.error('Error:', err);
+    }
+    setLoadingFields(false);
+  };
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -119,14 +137,9 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
       );
       setFieldMappings(mappings);
     } else {
-      // No settings exist, create default
+      // No settings exist - start with empty mappings
       setConfig(null);
-      setFieldMappings([
-        { salesforceField: 'FirstName', visitorField: 'name' },
-        { salesforceField: 'Email', visitorField: 'email' },
-        { salesforceField: 'Phone', visitorField: 'phone' },
-        { salesforceField: 'Description', visitorField: 'conversation_transcript' },
-      ]);
+      setFieldMappings([]);
     }
     setLoading(false);
   };
@@ -268,9 +281,12 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
 
   const addMapping = () => {
     const usedFields = new Set(fieldMappings.map(m => m.salesforceField));
-    const availableField = SALESFORCE_LEAD_FIELDS.find(f => !usedFields.has(f));
+    const availableField = salesforceFields.find(f => !usedFields.has(f.name));
     if (availableField) {
-      setFieldMappings([...fieldMappings, { salesforceField: availableField, visitorField: '' }]);
+      setFieldMappings([...fieldMappings, { salesforceField: availableField.name, visitorField: '' }]);
+    } else {
+      // Fallback if no SF fields loaded yet
+      setFieldMappings([...fieldMappings, { salesforceField: '', visitorField: '' }]);
     }
   };
 
@@ -451,10 +467,27 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
                 Map visitor data to Salesforce Lead fields
               </CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={addMapping}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Field
-            </Button>
+            <div className="flex items-center gap-2">
+              {config?.instance_url && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={fetchSalesforceFields}
+                  disabled={loadingFields}
+                >
+                  <RefreshCw className={`h-4 w-4 ${loadingFields ? 'animate-spin' : ''}`} />
+                </Button>
+              )}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={addMapping}
+                disabled={!config?.instance_url && salesforceFields.length === 0}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Field
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -466,6 +499,12 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
               <span></span>
             </div>
             
+            {!config?.instance_url && fieldMappings.length === 0 && (
+              <div className="col-span-4 text-center py-8 text-muted-foreground">
+                Connect to Salesforce to load Lead fields and configure mappings
+              </div>
+            )}
+
             {fieldMappings.map((mapping, index) => (
               <div key={index} className="grid grid-cols-[1fr,auto,1fr,auto] gap-4 items-center">
                 <Select
@@ -473,14 +512,20 @@ export const SalesforceSettings = ({ propertyId }: SalesforceSettingsProps) => {
                   onValueChange={(value) => updateMapping(index, 'salesforceField', value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select field" />
+                    <SelectValue placeholder="Select Salesforce field" />
                   </SelectTrigger>
                   <SelectContent>
-                    {SALESFORCE_LEAD_FIELDS.map((field) => (
-                      <SelectItem key={field} value={field}>
-                        {field}
+                    {salesforceFields.length > 0 ? (
+                      salesforceFields.map((field) => (
+                        <SelectItem key={field.name} value={field.name}>
+                          {field.label} {field.required && <span className="text-destructive">*</span>}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value={mapping.salesforceField || 'loading'} disabled>
+                        {loadingFields ? 'Loading fields...' : 'Connect to load fields'}
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
 
