@@ -17,6 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Users, UserPlus, Mail, Loader2, Trash2, RefreshCw, Send, Upload, Bot, Globe, ChevronDown, Save } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { InfoIndicator } from '@/components/docs/InfoIndicator';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -434,11 +435,14 @@ const TeamMembers = () => {
             <div className="max-w-4xl mx-auto">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Team Members</CardTitle>
-                <CardDescription>
-                  Agents can respond to conversations on assigned properties
-                </CardDescription>
+              <div className="flex items-center gap-2">
+                <div>
+                  <CardTitle>Team Members</CardTitle>
+                  <CardDescription>
+                    Agents can respond to conversations on assigned properties
+                  </CardDescription>
+                </div>
+                <InfoIndicator to="/documentation/team/inviting-agents" />
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={handleCreateTestAgent} className="text-xs">

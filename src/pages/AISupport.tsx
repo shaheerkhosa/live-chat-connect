@@ -20,6 +20,7 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { PropertySelector } from '@/components/PropertySelector';
 import { Bot, Loader2, Trash2, RefreshCw, Upload, Pencil, Clock, MessageSquare, Save, FileText, Users, Link, Globe, ChevronDown } from 'lucide-react';
+import { InfoIndicator } from '@/components/docs/InfoIndicator';
 import {
   DropdownMenu,
   DropdownMenuContent,

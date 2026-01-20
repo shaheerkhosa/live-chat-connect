@@ -19,6 +19,7 @@ import {
   Mail
 } from 'lucide-react';
 import { SlackSettings } from '@/components/settings/SlackSettings';
+import { InfoIndicator } from '@/components/docs/InfoIndicator';
 import { EmailSettings } from '@/components/settings/EmailSettings';
 import {
   Dialog,
@@ -166,13 +167,15 @@ const Notifications = () => {
               {selectedPropertyId && (
                 <Tabs defaultValue="slack" className="space-y-6">
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="slack">
-                      <MessageCircle className="mr-2 h-4 w-4" />
+                    <TabsTrigger value="slack" className="gap-2">
+                      <MessageCircle className="h-4 w-4" />
                       Slack
+                      <InfoIndicator to="/documentation/integrations/slack" size="sm" />
                     </TabsTrigger>
-                    <TabsTrigger value="email">
-                      <Mail className="mr-2 h-4 w-4" />
+                    <TabsTrigger value="email" className="gap-2">
+                      <Mail className="h-4 w-4" />
                       Email
+                      <InfoIndicator to="/documentation/integrations/email" size="sm" />
                     </TabsTrigger>
                   </TabsList>
 

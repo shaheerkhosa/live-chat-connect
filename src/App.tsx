@@ -23,6 +23,9 @@ import SlackApp from "./pages/SlackApp";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
+import Documentation from "./pages/Documentation";
+import DocPage from "./pages/docs/DocPage";
+import { DocsLayout } from "./components/docs/DocsLayout";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +80,13 @@ const AppRoutes = () => {
       <Route path="/slack-app" element={<SlackApp />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
+      
+      {/* Documentation routes */}
+      <Route path="/documentation" element={<DocsLayout />}>
+        <Route index element={<Documentation />} />
+        <Route path=":section/:topic" element={<DocPage />} />
+      </Route>
+      
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

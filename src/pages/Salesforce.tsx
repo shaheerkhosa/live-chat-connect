@@ -16,6 +16,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { SalesforceSettings } from '@/components/settings/SalesforceSettings';
+import { InfoIndicator } from '@/components/docs/InfoIndicator';
 import {
   Dialog,
   DialogContent,
