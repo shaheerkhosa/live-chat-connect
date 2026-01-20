@@ -20,7 +20,7 @@ export const PageHeader = ({ title, children, className, docsLink }: PageHeaderP
     >
       <div className="flex items-center gap-2">
         <h1 className="text-xl font-semibold text-sidebar-foreground">{title}</h1>
-        {docsLink && <InfoIndicator to={docsLink} size="md" />}
+        {docsLink && <InfoIndicator to={docsLink} size="md" variant="header" />}
       </div>
       {children && (
         <div className="flex items-center gap-2">
