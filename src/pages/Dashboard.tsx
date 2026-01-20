@@ -273,7 +273,7 @@ const DashboardContent = () => {
               <div className="flex items-center gap-1.5">
                 <h2 className="text-lg font-semibold text-sidebar-foreground">{getStatusTitle()}</h2>
                 <InfoIndicator 
-                  to="/documentation/inbox/overview" 
+                  to="/documentation/inbox/managing-conversations" 
                   variant="header"
                 />
               </div>
