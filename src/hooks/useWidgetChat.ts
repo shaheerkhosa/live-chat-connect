@@ -122,6 +122,31 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-ai`;
 const TRACK_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-page-analytics`;
 const EXTRACT_INFO_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-visitor-info`;
 const LOCATION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-visitor-location`;
+const UPDATE_VISITOR_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-visitor`;
+
+// Secure visitor update through edge function
+const updateVisitorSecure = async (
+  visitorId: string,
+  sessionId: string,
+  updates: Record<string, unknown>
+) => {
+  try {
+    const response = await fetch(UPDATE_VISITOR_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ visitorId, sessionId, updates }),
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to update visitor:', await response.text());
+    }
+  } catch (error) {
+    console.error('Error updating visitor:', error);
+  }
+};
 
 const fetchVisitorLocation = async (visitorId: string) => {
   try {
@@ -614,11 +639,8 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
       // Fetch geolocation for new visitor (non-blocking)
       fetchVisitorLocation(visitor.id);
     } else {
-      // Update current page
-      await supabase
-        .from('visitors')
-        .update({ current_page: window.location.pathname })
-        .eq('id', visitor.id);
+      // Update current page via secure edge function
+      updateVisitorSecure(visitor.id, sessionId, { current_page: window.location.pathname });
       
       // If visitor already has name/email, don't require lead capture
       if (visitor.name || visitor.email) {
@@ -687,13 +709,11 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     // Use ref to get the most current visitor ID (state may be stale in preview mode)
     const currentVisitorId = visitorIdRef.current || visitorId;
     if (currentVisitorId && (name || email)) {
-      await supabase
-        .from('visitors')
-        .update({ 
-          name: name || null, 
-          email: email || null 
-        })
-        .eq('id', currentVisitorId);
+      const sessionId = getOrCreateSessionId();
+      await updateVisitorSecure(currentVisitorId, sessionId, { 
+        name: name || null, 
+        email: email || null 
+      });
     }
   };
 

@@ -23,3 +23,9 @@ verify_jwt = false
 
 [functions.get-visitor-location]
 verify_jwt = false
+
+[functions.update-visitor]
+verify_jwt = false
+
+[functions.salesforce-export-leads]
+verify_jwt = false

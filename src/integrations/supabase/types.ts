@@ -761,11 +761,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      conversation_exists: { Args: { conv_uuid: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      property_exists: { Args: { property_uuid: string }; Returns: boolean }
+      visitor_matches_session: {
+        Args: { visitor_session_id: string; visitor_uuid: string }
         Returns: boolean
       }
     }
