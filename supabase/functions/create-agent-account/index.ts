@@ -106,20 +106,27 @@ serve(async (req: Request) => {
       );
     }
 
-    // The database trigger should assign the 'agent' role automatically
-    // But let's ensure it's set correctly
+    // The database trigger assigns 'client' role by default for new users
+    // We need to update it to 'agent' instead
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
-      .upsert({
-        user_id: userId,
-        role: "agent",
-      }, {
-        onConflict: "user_id,role",
-      });
+      .update({ role: "agent" })
+      .eq("user_id", userId);
 
     if (roleError) {
-      console.error("Error setting agent role:", roleError);
+      console.error("Error updating to agent role:", roleError);
+      // Try inserting if update fails (in case trigger didn't fire)
+      await supabaseAdmin
+        .from("user_roles")
+        .insert({ user_id: userId, role: "agent" });
     }
+
+    // Delete any duplicate 'client' role that might have been created
+    await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", userId)
+      .eq("role", "client");
 
     // Assign properties if provided
     if (propertyIds && propertyIds.length > 0 && agentData) {
