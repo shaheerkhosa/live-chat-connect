@@ -26,6 +26,7 @@ import NotFound from "./pages/NotFound";
 import Documentation from "./pages/Documentation";
 import DocPage from "./pages/docs/DocPage";
 import { DocsLayout } from "./components/docs/DocsLayout";
+import WidgetEmbed from "./pages/WidgetEmbed";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +78,7 @@ const AppRoutes = () => {
       <Route path="/dashboard/support" element={<RequireClient><Support /></RequireClient>} />
       
       <Route path="/widget-preview" element={<WidgetPreview />} />
+      <Route path="/widget-embed/:propertyId" element={<WidgetEmbed />} />
       <Route path="/slack-app" element={<SlackApp />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
