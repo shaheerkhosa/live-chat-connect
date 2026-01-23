@@ -252,22 +252,11 @@ const WidgetPreview = () => {
     setBorderRadius(value[0]);
   };
   const widgetScript = selectedPropertyId ? `<!-- Scaled Bot Widget -->
-<script>
-  (function(w,d,s,o,f,js,fjs){
-    w['ScaledBot']=o;w[o]=w[o]||function(){(w[o].q=w[o].q||[]).push(arguments)};
-    js=d.createElement(s);fjs=d.getElementsByTagName(s)[0];
-    js.id=o;js.src=f;js.async=1;fjs.parentNode.insertBefore(js,fjs);
-  }(window,document,'script','sb','https://visitor-talk-now.lovable.app/widget.js'));
-  sb('init', {
-    propertyId: '${selectedPropertyId}',
-    primaryColor: '${primaryColor}',
-    textColor: '${textColor}',
-    borderColor: '${borderColor}',
-    widgetSize: '${widgetSize}',
-    borderRadius: ${borderRadius},
-    greeting: '${greeting}'
-  });
-</script>` : '// Select a property to generate embed code';
+<iframe 
+  src="https://visitor-talk-now.lovable.app/widget-embed/${selectedPropertyId}?primaryColor=${encodeURIComponent(primaryColor)}&textColor=${encodeURIComponent(textColor)}&borderColor=${encodeURIComponent(borderColor)}&widgetSize=${widgetSize}&borderRadius=${borderRadius}&greeting=${encodeURIComponent(greeting)}"
+  style="position: fixed; bottom: 0; right: 0; width: 400px; height: 600px; border: none; z-index: 9999;"
+  allow="camera; microphone"
+></iframe>` : '// Select a property to generate embed code';
   const handleCopy = () => {
     if (!selectedPropertyId) {
       toast.error('Please select a property first');
