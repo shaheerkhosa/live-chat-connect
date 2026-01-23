@@ -118,6 +118,7 @@ const DashboardContent = () => {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [propertyFilter, setPropertyFilter] = useState<string>('all');
+  const [aiEnabledMap, setAiEnabledMap] = useState<Record<string, boolean>>({});
 
   // Convert DB conversations to UI format
   const conversations = useMemo(() => dbConversations.map(toUiConversation), [dbConversations]);
@@ -242,6 +243,17 @@ const DashboardContent = () => {
       console.error('Error creating test conversation:', error);
       toast.error('Failed to create test conversation');
     }
+  };
+
+  // AI toggle for conversations
+  const isAIEnabled = selectedConversationId ? (aiEnabledMap[selectedConversationId] ?? true) : true;
+  
+  const handleToggleAI = () => {
+    if (!selectedConversationId) return;
+    setAiEnabledMap(prev => ({
+      ...prev,
+      [selectedConversationId]: !(prev[selectedConversationId] ?? true)
+    }));
   };
   const getStatusTitle = () => {
     switch (statusFilter) {
@@ -384,7 +396,13 @@ const DashboardContent = () => {
 
             {/* Chat Panel */}
             <div className="flex-1 min-w-0">
-              <ChatPanel conversation={selectedConversation} onSendMessage={handleSendMessage} onCloseConversation={handleCloseConversation} />
+              <ChatPanel 
+                conversation={selectedConversation} 
+                onSendMessage={handleSendMessage} 
+                onCloseConversation={handleCloseConversation}
+                isAIEnabled={isAIEnabled}
+                onToggleAI={handleToggleAI}
+              />
             </div>
           </div>
         </div>

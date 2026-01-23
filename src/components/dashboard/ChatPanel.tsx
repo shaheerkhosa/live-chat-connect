@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
-import { Send, MoreVertical, User, Globe, Monitor, MapPin, Archive, UserPlus, Video, Phone, Briefcase, Calendar, Mail, ChevronRight, ChevronLeft, MessageSquare, Heart, Pill, Building, Shield, AlertTriangle } from 'lucide-react';
+import { Send, MoreVertical, User, Globe, Monitor, MapPin, Archive, UserPlus, Video, Phone, Briefcase, Calendar, Mail, ChevronRight, ChevronLeft, MessageSquare, Heart, Pill, Building, Shield, AlertTriangle, Bot, BotOff } from 'lucide-react';
 import gsap from 'gsap';
 import { cn } from '@/lib/utils';
 import { Conversation, Message } from '@/types/chat';
@@ -15,10 +15,14 @@ import { mockAgents } from '@/data/mockData';
 import { useVideoChat } from '@/hooks/useVideoChat';
 import { VideoCallModal } from '@/components/video/VideoCallModal';
 import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 interface ChatPanelProps {
   conversation: Conversation | null;
   onSendMessage: (content: string) => void;
   onCloseConversation: () => void;
+  isAIEnabled?: boolean;
+  onToggleAI?: () => void;
 }
 const formatMessageTime = (date: Date) => {
   if (isToday(date)) {
@@ -194,7 +198,9 @@ const VisitorInfoSidebar = ({
 export const ChatPanel = ({
   conversation,
   onSendMessage,
-  onCloseConversation
+  onCloseConversation,
+  isAIEnabled = true,
+  onToggleAI
 }: ChatPanelProps) => {
   const [message, setMessage] = useState('');
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
@@ -301,6 +307,45 @@ export const ChatPanel = ({
   return <div className="flex h-full bg-gradient-subtle">
       {/* Chat Area */}
       <div ref={chatAreaRef} className="flex-1 flex flex-col min-w-0">
+        
+        {/* AI Toggle Header */}
+        {onToggleAI && (
+          <div className="px-4 py-2 border-b border-border/30 flex items-center justify-between bg-background/50">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">AI Assistant</span>
+              <Badge variant={isAIEnabled ? "default" : "secondary"} className="text-xs">
+                {isAIEnabled ? "Active" : "Paused"}
+              </Badge>
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={isAIEnabled ? "default" : "outline"}
+                    size="sm"
+                    onClick={onToggleAI}
+                    className="gap-2"
+                  >
+                    {isAIEnabled ? (
+                      <>
+                        <Bot className="h-4 w-4" />
+                        AI On
+                      </>
+                    ) : (
+                      <>
+                        <BotOff className="h-4 w-4" />
+                        AI Off
+                      </>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isAIEnabled ? "Click to disable AI responses" : "Click to enable AI responses"}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
 
         {/* Messages */}
         <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-4 bg-background scrollbar-thin">

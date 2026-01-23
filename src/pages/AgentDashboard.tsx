@@ -22,6 +22,7 @@ export default function AgentDashboard() {
   const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'away'>('online');
   const [agentProfile, setAgentProfile] = useState<{ id: string; name: string; email: string; avatar_url?: string } | null>(null);
   const [assignedPropertyIds, setAssignedPropertyIds] = useState<string[]>([]);
+  const [aiEnabledMap, setAiEnabledMap] = useState<Record<string, boolean>>({});
 
   // Redirect if not agent
   useEffect(() => {
@@ -294,6 +295,17 @@ export default function AgentDashboard() {
     ));
   };
 
+  // AI toggle for conversations
+  const isAIEnabled = selectedConversation?.id ? (aiEnabledMap[selectedConversation.id] ?? true) : true;
+  
+  const handleToggleAI = () => {
+    if (!selectedConversation?.id) return;
+    setAiEnabledMap(prev => ({
+      ...prev,
+      [selectedConversation.id]: !(prev[selectedConversation.id] ?? true)
+    }));
+  };
+
   if (loading || !isAgent) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -387,6 +399,8 @@ export default function AgentDashboard() {
           conversation={selectedConversation}
           onSendMessage={handleSendMessage}
           onCloseConversation={handleCloseConversation}
+          isAIEnabled={isAIEnabled}
+          onToggleAI={handleToggleAI}
         />
       </div>
     </div>
