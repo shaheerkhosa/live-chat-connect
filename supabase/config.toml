@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.widget-save-message]
 verify_jwt = false
+
+[functions.widget-get-messages]
+verify_jwt = false

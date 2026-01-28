@@ -179,6 +179,7 @@ const AI_AGENTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-pro
 const SETTINGS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-property-settings`;
 const BOOTSTRAP_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget-bootstrap`;
 const SAVE_MESSAGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget-save-message`;
+const GET_MESSAGES_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget-get-messages`;
 
 // Secure visitor update through edge function
 const updateVisitorSecure = async (
@@ -1143,22 +1144,54 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     };
   }, [startProactiveTimer]);
 
-  // Subscribe to realtime messages (for human agent responses)
-  useEffect(() => {
-    if (!conversationId) return;
+  // Track the highest sequence number we've seen to only fetch new messages
+  const lastSeqRef = useRef<number>(0);
 
-    const channel = supabase
-      .channel(`messages-${conversationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          const rawMsg = payload.new as { id: string; content: string; sender_type: string; sender_id: string; created_at: string };
+  // Poll for new messages (human agent responses) - realtime requires auth which widget doesn't have
+  useEffect(() => {
+    // Only poll for live embeds (not preview mode)
+    if (isPreview || !propertyId || propertyId === 'demo') return;
+    
+    const convId = conversationIdRef.current;
+    const vId = visitorIdRef.current;
+    if (!convId || !vId) return;
+
+    const sessionId = getOrCreateSessionId();
+    let isMounted = true;
+
+    const pollMessages = async () => {
+      if (!isMounted) return;
+      
+      try {
+        const response = await fetch(GET_MESSAGES_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            conversationId: convId,
+            visitorId: vId,
+            sessionId,
+            afterSequence: lastSeqRef.current,
+          }),
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const fetchedMessages = data.messages || [];
+
+        if (fetchedMessages.length === 0) return;
+
+        // Update lastSeqRef
+        const maxSeq = Math.max(...fetchedMessages.map((m: { sequence_number: number }) => m.sequence_number));
+        if (maxSeq > lastSeqRef.current) {
+          lastSeqRef.current = maxSeq;
+        }
+
+        // Process new messages
+        for (const rawMsg of fetchedMessages) {
           // Only add agent messages that aren't from AI (human agent override)
           if (rawMsg.sender_type === 'agent' && rawMsg.sender_id !== 'ai-bot') {
             // Mark human has taken over - AI should stop responding
@@ -1188,13 +1221,21 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
             });
           }
         }
-      )
-      .subscribe();
+      } catch (e) {
+        console.error('Error polling messages:', e);
+      }
+    };
+
+    // Poll every 2 seconds
+    const intervalId = setInterval(pollMessages, 2000);
+    // Also poll immediately
+    pollMessages();
 
     return () => {
-      supabase.removeChannel(channel);
+      isMounted = false;
+      clearInterval(intervalId);
     };
-  }, [conversationId, humanEscalationTracked, propertyId, isEscalated, humanHasTakenOver]);
+  }, [conversationId, humanEscalationTracked, propertyId, isEscalated, humanHasTakenOver, isPreview]);
 
   return {
     messages,
