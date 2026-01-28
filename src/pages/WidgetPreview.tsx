@@ -253,7 +253,7 @@ const WidgetPreview = () => {
   };
   const widgetScript = selectedPropertyId ? `<!-- Scaled Bot Widget -->
 <iframe 
-  src="https://visitor-talk-now.lovable.app/widget-embed/${selectedPropertyId}?primaryColor=${encodeURIComponent(primaryColor)}&textColor=${encodeURIComponent(textColor)}&borderColor=${encodeURIComponent(borderColor)}&widgetSize=${widgetSize}&borderRadius=${borderRadius}&greeting=${encodeURIComponent(greeting)}"
+  src="https://visitor-talk-now.lovable.app/widget-embed/${selectedPropertyId}?primaryColor=${encodeURIComponent(primaryColor)}&textColor=${encodeURIComponent(textColor)}&borderColor=${encodeURIComponent(borderColor)}&widgetSize=${widgetSize}&borderRadius=${borderRadius}&greeting=${encodeURIComponent(greeting)}&autoOpen=true"
   style="position: fixed; bottom: 0; right: 0; width: 400px; height: 600px; border: none; z-index: 9999;"
   allow="camera; microphone"
 ></iframe>` : '// Select a property to generate embed code';
