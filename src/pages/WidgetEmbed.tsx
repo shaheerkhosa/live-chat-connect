@@ -11,13 +11,14 @@ const WidgetEmbed = () => {
   const widgetSize = (searchParams.get('widgetSize') as 'small' | 'medium' | 'large') || 'medium';
   const borderRadius = parseInt(searchParams.get('borderRadius') || '16', 10);
   const greeting = searchParams.get('greeting') || 'Hi there! How can I help you today?';
+  const autoOpen = searchParams.get('autoOpen') !== 'false'; // Default to true for embeds
 
   if (!propertyId) {
     return <div className="p-4 text-red-500">Property ID is required</div>;
   }
 
   return (
-    <div className="min-h-screen bg-transparent">
+    <div className="w-full h-screen bg-transparent flex items-end justify-end p-0">
       <ChatWidget
         propertyId={propertyId}
         primaryColor={primaryColor}
@@ -27,6 +28,7 @@ const WidgetEmbed = () => {
         borderRadius={borderRadius}
         greeting={greeting}
         isPreview={false}
+        autoOpen={autoOpen}
       />
     </div>
   );
