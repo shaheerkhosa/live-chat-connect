@@ -32,3 +32,12 @@ verify_jwt = false
 
 [functions.get-property-ai-agents]
 verify_jwt = false
+
+[functions.get-property-settings]
+verify_jwt = false
+
+[functions.widget-bootstrap]
+verify_jwt = false
+
+[functions.widget-save-message]
+verify_jwt = false
