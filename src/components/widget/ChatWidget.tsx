@@ -202,6 +202,30 @@ export const ChatWidget = ({
   };
   const currentSize = sizeConfig[widgetSize];
 
+  // Tell the parent page how big the iframe should be.
+  // This removes the “big box” around the widget when it’s closed.
+  useEffect(() => {
+    if (isPreview) return;
+
+    let inIframe = false;
+    try {
+      inIframe = window.self !== window.top;
+    } catch {
+      inIframe = true;
+    }
+
+    if (!inIframe) return;
+
+    const padding = 32; // matches the widget's internal bottom/right spacing
+    const width = (isOpen ? currentSize.width : currentSize.button) + padding;
+    const height = (isOpen ? currentSize.height : currentSize.button) + padding;
+
+    window.parent.postMessage(
+      { type: 'scaledbot_widget_resize', width, height },
+      '*'
+    );
+  }, [isOpen, widgetSize, isPreview, currentSize.width, currentSize.height, currentSize.button]);
+
   // Convert HSL string to ensure compatibility
   const widgetStyle = {
     '--widget-primary': primaryColor,

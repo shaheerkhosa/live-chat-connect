@@ -253,11 +253,24 @@ const WidgetPreview = () => {
   };
   const widgetScript = selectedPropertyId ? `<!-- Scaled Bot Widget -->
 <iframe 
+  id="scaledbot-widget"
   src="https://visitor-talk-now.lovable.app/widget-embed/${selectedPropertyId}?primaryColor=${encodeURIComponent(primaryColor)}&textColor=${encodeURIComponent(textColor)}&borderColor=${encodeURIComponent(borderColor)}&widgetSize=${widgetSize}&borderRadius=${borderRadius}&greeting=${encodeURIComponent(greeting)}&autoOpen=true"
-  style="position: fixed; bottom: 0; right: 0; width: 400px; height: 600px; border: none; z-index: 9999; background: transparent;"
+  style="position: fixed; bottom: 0; right: 0; width: 88px; height: 88px; border: none; z-index: 9999; background: transparent; overflow: hidden;"
   allow="camera; microphone"
   allowtransparency="true"
-></iframe>` : '// Select a property to generate embed code';
+></iframe>
+<script>
+  (function () {
+    var iframe = document.getElementById('scaledbot-widget');
+    if (!iframe) return;
+    window.addEventListener('message', function (event) {
+      var data = event && event.data;
+      if (!data || data.type !== 'scaledbot_widget_resize') return;
+      if (typeof data.width === 'number') iframe.style.width = data.width + 'px';
+      if (typeof data.height === 'number') iframe.style.height = data.height + 'px';
+    });
+  })();
+</script>` : '// Select a property to generate embed code';
   const handleCopy = () => {
     if (!selectedPropertyId) {
       toast.error('Please select a property first');

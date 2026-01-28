@@ -97,14 +97,52 @@ const getBrowserInfo = (): string => {
   return `${browser}, ${os}`;
 };
 
-const getPageInfo = () => ({
-  url: window.location.href,
-  pageTitle: document.title,
-});
+const getParentPageUrl = (): string | null => {
+  // When running inside an iframe, document.referrer is usually the host page URL.
+  const ref = document.referrer;
+  if (!ref) return null;
+
+  // Avoid self-reporting the embed URL.
+  if (ref.includes('/widget-embed/')) return null;
+  return ref;
+};
+
+const getEffectivePageUrl = (): string => {
+  return getParentPageUrl() ?? window.location.href;
+};
+
+const getEffectivePagePath = (): string => {
+  const parentUrl = getParentPageUrl();
+  if (!parentUrl) return window.location.pathname;
+
+  try {
+    const u = new URL(parentUrl);
+    // Keep query params for attribution/debugging.
+    return `${u.pathname}${u.search}`;
+  } catch {
+    return parentUrl;
+  }
+};
+
+const getPageInfo = () => {
+  const url = getEffectivePageUrl();
+  const pageTitle = url === window.location.href ? document.title : null;
+  return { url, pageTitle };
+};
 
 // Extract GCLID and other tracking parameters from URL
 const getTrackingParams = () => {
-  const params = new URLSearchParams(window.location.search);
+  const parentUrl = getParentPageUrl();
+  const params = parentUrl
+    ? (() => {
+        try {
+          return new URL(parentUrl).searchParams;
+        } catch {
+          return new URLSearchParams();
+        }
+      })()
+    : new URLSearchParams(window.location.search);
+
   return {
     gclid: params.get('gclid') || null, // Google Click ID
   };
@@ -185,7 +223,7 @@ const extractVisitorInfo = async (
     console.error('Failed to extract visitor info:', error);
   }
 };
-const trackAnalyticsEvent = async (
+  const trackAnalyticsEvent = async (
   propertyId: string,
   eventType: 'chat_open' | 'human_escalation'
 ) => {
@@ -200,7 +238,7 @@ const trackAnalyticsEvent = async (
       body: JSON.stringify({
         property_id: propertyId,
         url,
-        page_title: pageTitle,
+          page_title: pageTitle,
         event_type: eventType,
       }),
     });
@@ -623,7 +661,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
           property_id: propertyId,
           session_id: sessionId,
           browser_info: getBrowserInfo(),
-          current_page: window.location.pathname,
+          current_page: getEffectivePagePath(),
           gclid: trackingParams.gclid,
         })
         .select()
@@ -640,7 +678,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
       fetchVisitorLocation(visitor.id);
     } else {
       // Update current page via secure edge function
-      updateVisitorSecure(visitor.id, sessionId, { current_page: window.location.pathname });
+      updateVisitorSecure(visitor.id, sessionId, { current_page: getEffectivePagePath() });
       
       // If visitor already has name/email, don't require lead capture
       if (visitor.name || visitor.email) {
@@ -696,6 +734,39 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         agent_name: greetingAgent?.name,
         agent_avatar: greetingAgent?.avatar_url,
       }]);
+
+      // Create a conversation immediately for real embeds so chats show up in the portal
+      // even before escalation.
+      if (!isPreview && propertyId && propertyId !== 'demo') {
+        const { data: newConversation, error: convError } = await supabase
+          .from('conversations')
+          .insert({
+            property_id: propertyId,
+            visitor_id: visitor.id,
+            status: 'pending',
+          })
+          .select()
+          .single();
+
+        if (convError) {
+          console.error('Error creating conversation:', convError);
+        } else if (newConversation) {
+          setConversationId(newConversation.id);
+
+          // Save the greeting as the first message so the portal transcript starts cleanly.
+          const greetingContent = settings.greeting || greeting || '';
+          if (greetingContent.trim()) {
+            const { error: greetErr } = await supabase.from('messages').insert({
+              conversation_id: newConversation.id,
+              sender_id: 'ai-bot',
+              sender_type: 'agent',
+              content: greetingContent,
+              sequence_number: 1,
+            });
+            if (greetErr) console.error('Error saving greeting message:', greetErr);
+          }
+        }
+      }
     }
 
     setLoading(false);
@@ -732,6 +803,42 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     };
     
     setMessages(prev => [...prev, visitorMessage]);
+
+    // Ensure we have a persisted conversation for real embeds before we do anything else.
+    // This prevents the "AI responds but nothing shows in the portal" issue.
+    if (!isPreview && propertyId && propertyId !== 'demo') {
+      // If visitor hasn't been established yet, try to initialize now.
+      if (!visitorIdRef.current && !visitorId) {
+        try {
+          await initializeChat();
+        } catch (e) {
+          console.error('Failed to initialize chat before persisting message:', e);
+        }
+      }
+
+      const currentVisitorIdForDb = visitorIdRef.current || visitorId;
+      if (currentVisitorIdForDb) {
+        let currentConversationId = conversationId;
+        if (!currentConversationId) {
+          const { data: newConversation, error: convError } = await supabase
+            .from('conversations')
+            .insert({
+              property_id: propertyId,
+              visitor_id: currentVisitorIdForDb,
+              status: 'pending',
+            })
+            .select()
+            .single();
+
+          if (convError) {
+            console.error('Error creating conversation (sendMessage):', convError);
+          } else if (newConversation) {
+            currentConversationId = newConversation.id;
+            setConversationId(currentConversationId);
+          }
+        }
+      }
+    }
 
     // Track chat_open event on first message
     if (!chatOpenTracked && propertyId && propertyId !== 'demo') {
@@ -968,7 +1075,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
       let currentConversationId = conversationId;
 
       // Create conversation if doesn't exist (only for non-preview mode)
-      if (!currentConversationId && !isPreview) {
+        if (!currentConversationId && !isPreview) {
         const { data: newConversation, error } = await supabase
           .from('conversations')
           .insert({
@@ -979,13 +1086,17 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
           .select()
           .single();
 
-        if (!error && newConversation) {
+          if (error) {
+            console.error('Error creating conversation:', error);
+          }
+
+          if (!error && newConversation) {
           currentConversationId = newConversation.id;
           setConversationId(currentConversationId);
         }
       }
 
-      if (currentConversationId) {
+        if (currentConversationId) {
         // Get next sequence number for this conversation
         const { data: maxSeqData } = await supabase
           .from('messages')
@@ -998,7 +1109,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         let nextSeq = (maxSeqData?.sequence_number || 0) + 1;
 
         // Save visitor message
-        await supabase
+         const { error: msgErr } = await supabase
           .from('messages')
           .insert({
             conversation_id: currentConversationId,
@@ -1007,10 +1118,11 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
             content,
             sequence_number: nextSeq,
           });
+         if (msgErr) console.error('Error saving visitor message:', msgErr);
 
         // Save AI response with next sequence number
-        if (aiContent) {
-          await supabase
+          if (aiContent) {
+          const { error: aiMsgErr } = await supabase
             .from('messages')
             .insert({
               conversation_id: currentConversationId,
@@ -1019,6 +1131,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
               content: aiContent,
               sequence_number: nextSeq + 1,
             });
+          if (aiMsgErr) console.error('Error saving AI message:', aiMsgErr);
         }
 
         // Also trigger extraction after saving new messages in preview mode
