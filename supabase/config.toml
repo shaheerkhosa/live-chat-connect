@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.salesforce-export-leads]
 verify_jwt = false
+
+[functions.get-property-ai-agents]
+verify_jwt = false

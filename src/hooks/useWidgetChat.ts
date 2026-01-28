@@ -161,6 +161,7 @@ const TRACK_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-page-
 const EXTRACT_INFO_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-visitor-info`;
 const LOCATION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-visitor-location`;
 const UPDATE_VISITOR_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-visitor`;
+const AI_AGENTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-property-ai-agents`;
 
 // Secure visitor update through edge function
 const updateVisitorSecure = async (
@@ -369,36 +370,47 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
   const aiAgentIndexRef = useRef(0);
   const visitorIdRef = useRef<string | null>(null); // Ref to track current visitor ID for extraction
 
-  // Fetch AI agents for this property - ONLY assigned agents, no fallback
-  const fetchAiAgents = useCallback(async () => {
-    if (!propertyId || propertyId === 'demo') return;
-
-    // Get AI agents assigned to this property
-    const { data: assignments, error: assignError } = await supabase
-      .from('ai_agent_properties')
-      .select('ai_agent_id')
-      .eq('property_id', propertyId);
-
-    if (assignError || !assignments || assignments.length === 0) {
-      // No AI agents assigned - leave empty
+  // Fetch AI agents for this property via edge function (works without auth)
+  const fetchAiAgents = useCallback(async (): Promise<AIAgent[]> => {
+    if (!propertyId || propertyId === 'demo') {
       setAiAgents([]);
       setCurrentAiAgent(null);
-      return;
+      return [];
     }
 
-    const agentIds = assignments.map(a => a.ai_agent_id);
-    const { data: agents, error } = await supabase
-      .from('ai_agents')
-      .select('id, name, avatar_url, personality_prompt')
-      .in('id', agentIds)
-      .eq('status', 'active');
+    try {
+      const response = await fetch(AI_AGENTS_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ propertyId }),
+      });
 
-    if (!error && agents && agents.length > 0) {
-      setAiAgents(agents);
-      setCurrentAiAgent(agents[0]);
-    } else {
+      if (!response.ok) {
+        console.error('Failed to fetch AI agents:', response.status);
+        setAiAgents([]);
+        setCurrentAiAgent(null);
+        return [];
+      }
+
+      const data = await response.json();
+      const agents: AIAgent[] = data.agents || [];
+
+      if (agents.length > 0) {
+        setAiAgents(agents);
+        setCurrentAiAgent(agents[0]);
+      } else {
+        setAiAgents([]);
+        setCurrentAiAgent(null);
+      }
+      return agents;
+    } catch (error) {
+      console.error('Error fetching AI agents:', error);
       setAiAgents([]);
       setCurrentAiAgent(null);
+      return [];
     }
   }, [propertyId]);
 
@@ -618,16 +630,15 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
   }, [settings.proactive_message_enabled, settings.proactive_message, settings.proactive_message_delay_seconds, messages]);
 
   const initializeChat = useCallback(async () => {
-    // Fetch settings and AI agents first
-    await Promise.all([fetchSettings(), fetchAiAgents()]);
+    // Fetch settings first
+    await fetchSettings();
+    
+    // Fetch AI agents and get the result directly (don't rely on state)
+    const fetchedAgents = await fetchAiAgents();
 
     if (!propertyId || propertyId === 'demo' || isPreview) {
-      // In preview/demo mode, also fetch AI agents
-      if (propertyId && propertyId !== 'demo') {
-        await fetchAiAgents();
-      }
-      // Just add the greeting and use AI without database
-      const greetingAgent = aiAgents.length > 0 ? aiAgents[0] : null;
+      // In preview/demo mode, use fetched agents directly
+      const greetingAgent = fetchedAgents.length > 0 ? fetchedAgents[0] : null;
       if (greeting || settings.greeting) {
         setMessages([{
           id: 'greeting',
@@ -724,8 +735,8 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         sender_type: m.sender_type as 'agent' | 'visitor',
       })));
     } else if (settings.greeting || greeting) {
-      // Add greeting for new conversations - use first AI agent if available
-      const greetingAgent = aiAgents.length > 0 ? aiAgents[0] : null;
+      // Add greeting for new conversations - use fetched AI agent directly
+      const greetingAgent = fetchedAgents.length > 0 ? fetchedAgents[0] : null;
       setMessages([{
         id: 'greeting',
         content: settings.greeting || greeting || '',
@@ -770,7 +781,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     }
 
     setLoading(false);
-  }, [propertyId, greeting, fetchSettings, settings.greeting, isPreview]);
+  }, [propertyId, greeting, fetchSettings, fetchAiAgents, settings.greeting, isPreview]);
 
   // Submit lead info
   const submitLeadInfo = async (name?: string, email?: string) => {
