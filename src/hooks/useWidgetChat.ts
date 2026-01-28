@@ -388,6 +388,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
   const aiAgentIndexRef = useRef(0);
   const visitorIdRef = useRef<string | null>(null); // Ref to track current visitor ID for extraction
   const conversationIdRef = useRef<string | null>(null);
+  const lastSeqRef = useRef<number>(0); // Track last sequence number for message polling
 
   // Fetch AI agents for this property via edge function (works without auth)
   const fetchAiAgents = useCallback(async (): Promise<AIAgent[]> => {
@@ -512,7 +513,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     }
   }, [propertyId]);
 
-  const ensureWidgetIds = useCallback(async (greetingText?: string) => {
+  const ensureWidgetIds = useCallback(async (greetingText?: string, fetchedAgents?: AIAgent[]) => {
     if (!propertyId || propertyId === 'demo' || isPreview) return;
     if (visitorIdRef.current && conversationIdRef.current) return;
 
@@ -557,6 +558,60 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         });
         if (data.visitorInfo?.name || data.visitorInfo?.email) {
           setRequiresLeadCapture(false);
+        }
+      }
+
+      // Load existing messages for returning visitors
+      if (data?.visitorId && data?.conversationId) {
+        try {
+          const msgResponse = await fetch(GET_MESSAGES_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({
+              conversationId: data.conversationId,
+              visitorId: data.visitorId,
+              sessionId,
+            }),
+          });
+
+          if (msgResponse.ok) {
+            const msgData = await msgResponse.json();
+            const existingMessages = msgData.messages || [];
+            
+            if (existingMessages.length > 0) {
+              // Map DB messages to UI format
+              const greetingAgent = fetchedAgents && fetchedAgents.length > 0 ? fetchedAgents[0] : null;
+              const mappedMessages: Message[] = existingMessages.map((m: { id: string; content: string; sender_type: string; sender_id: string; created_at: string; sequence_number: number }) => ({
+                id: m.id,
+                content: m.content,
+                sender_type: m.sender_type === 'agent' ? 'agent' : 'visitor',
+                created_at: m.created_at,
+                sequence_number: m.sequence_number,
+                // Add agent info for agent messages
+                agent_name: m.sender_type === 'agent' ? greetingAgent?.name : undefined,
+                agent_avatar: m.sender_type === 'agent' ? greetingAgent?.avatar_url : undefined,
+              }));
+
+              setMessages(mappedMessages);
+              
+              // Update lastSeqRef to prevent re-fetching these messages
+              const maxSeq = Math.max(...existingMessages.map((m: { sequence_number: number }) => m.sequence_number || 0));
+              lastSeqRef.current = maxSeq;
+
+              // Check if a human has taken over (any agent message not from ai-bot)
+              const humanAgentMsg = existingMessages.find((m: { sender_type: string; sender_id: string }) => 
+                m.sender_type === 'agent' && m.sender_id !== 'ai-bot'
+              );
+              if (humanAgentMsg) {
+                setHumanHasTakenOver(true);
+              }
+            }
+          }
+        } catch (msgError) {
+          console.error('Failed to load existing messages:', msgError);
         }
       }
 
@@ -751,7 +806,8 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     setLoading(false);
 
     // Background bootstrap (visitor + conversation ids) for real embeds
-    void ensureWidgetIds(greetingContent);
+    // Pass fetchedAgents so we can attribute agent info to loaded messages
+    void ensureWidgetIds(greetingContent, fetchedAgents);
   }, [propertyId, greeting, fetchSettings, fetchAiAgents, isPreview, ensureWidgetIds]);
 
   // Submit lead info
@@ -1143,9 +1199,6 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
       }
     };
   }, [startProactiveTimer]);
-
-  // Track the highest sequence number we've seen to only fetch new messages
-  const lastSeqRef = useRef<number>(0);
 
   // Poll for new messages (human agent responses) - realtime requires auth which widget doesn't have
   useEffect(() => {
