@@ -17,6 +17,7 @@ interface ChatWidgetProps {
   agentName?: string;
   agentAvatar?: string;
   isPreview?: boolean;
+  autoOpen?: boolean;
 }
 
 export const ChatWidget = ({
@@ -30,8 +31,9 @@ export const ChatWidget = ({
   agentName = "Support",
   agentAvatar,
   isPreview = false,
+  autoOpen = false,
 }: ChatWidgetProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(autoOpen);
   const [inputValue, setInputValue] = useState('');
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [hasIncomingCall, setHasIncomingCall] = useState(false);
