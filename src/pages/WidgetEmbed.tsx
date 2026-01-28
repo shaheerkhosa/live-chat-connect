@@ -1,5 +1,6 @@
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ChatWidget } from '@/components/widget/ChatWidget';
+import { useEffect } from 'react';
 
 const WidgetEmbed = () => {
   const { propertyId } = useParams<{ propertyId: string }>();
@@ -13,12 +14,25 @@ const WidgetEmbed = () => {
   const greeting = searchParams.get('greeting') || 'Hi there! How can I help you today?';
   const autoOpen = searchParams.get('autoOpen') !== 'false'; // Default to true for embeds
 
+  // Make the entire page transparent for iframe embedding
+  useEffect(() => {
+    document.body.style.background = 'transparent';
+    document.documentElement.style.background = 'transparent';
+    return () => {
+      document.body.style.background = '';
+      document.documentElement.style.background = '';
+    };
+  }, []);
+
   if (!propertyId) {
     return <div className="p-4 text-red-500">Property ID is required</div>;
   }
 
   return (
-    <div className="w-full h-screen bg-transparent flex items-end justify-end p-0">
+    <div 
+      className="w-full h-screen flex items-end justify-end p-4"
+      style={{ background: 'transparent' }}
+    >
       <ChatWidget
         propertyId={propertyId}
         primaryColor={primaryColor}

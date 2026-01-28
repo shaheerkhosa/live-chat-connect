@@ -254,8 +254,9 @@ const WidgetPreview = () => {
   const widgetScript = selectedPropertyId ? `<!-- Scaled Bot Widget -->
 <iframe 
   src="https://visitor-talk-now.lovable.app/widget-embed/${selectedPropertyId}?primaryColor=${encodeURIComponent(primaryColor)}&textColor=${encodeURIComponent(textColor)}&borderColor=${encodeURIComponent(borderColor)}&widgetSize=${widgetSize}&borderRadius=${borderRadius}&greeting=${encodeURIComponent(greeting)}&autoOpen=true"
-  style="position: fixed; bottom: 0; right: 0; width: 400px; height: 600px; border: none; z-index: 9999;"
+  style="position: fixed; bottom: 0; right: 0; width: 400px; height: 600px; border: none; z-index: 9999; background: transparent;"
   allow="camera; microphone"
+  allowtransparency="true"
 ></iframe>` : '// Select a property to generate embed code';
   const handleCopy = () => {
     if (!selectedPropertyId) {
