@@ -1205,6 +1205,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     conversationId,
     settings,
     isEscalated,
+    humanHasTakenOver,
     requiresLeadCapture,
     submitLeadInfo,
     visitorInfo,

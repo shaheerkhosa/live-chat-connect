@@ -354,9 +354,49 @@ export const ChatPanel = ({
 
         {/* Input - Rounder styling */}
         <div className="p-4 border-t border-border/30 glass-subtle rounded-b-2xl">
+          {/* AI Mode Warning Banner */}
+          {isAIEnabled && status !== 'closed' && (
+            <div className="mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-3">
+              <div className="p-2 rounded-full bg-amber-500/20">
+                <Bot className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-300">AI is handling this conversation</p>
+                <p className="text-xs text-amber-600/80 dark:text-amber-400/80">Turn off AI mode to respond manually</p>
+              </div>
+            </div>
+          )}
           <div className="flex gap-2">
-            <Input ref={inputRef} value={message} onChange={e => setMessage(e.target.value)} onKeyDown={handleKeyDown} placeholder={status === 'closed' ? 'Conversation closed' : 'Type a message...'} disabled={status === 'closed'} className="flex-1 bg-background/50 focus:bg-background transition-colors rounded-xl" />
-            <Button onClick={handleSend} disabled={!message.trim() || status === 'closed'} className="bg-primary hover:bg-primary/90 glow-primary transition-all hover:scale-105 rounded-xl">
+            <Input 
+              ref={inputRef} 
+              value={message} 
+              onChange={e => setMessage(e.target.value)} 
+              onKeyDown={handleKeyDown} 
+              placeholder={
+                status === 'closed' 
+                  ? 'Conversation closed' 
+                  : isAIEnabled 
+                    ? 'AI mode is active — disable to reply' 
+                    : 'Type a message...'
+              } 
+              disabled={status === 'closed' || isAIEnabled} 
+              className={cn(
+                "flex-1 transition-colors rounded-xl",
+                isAIEnabled 
+                  ? "bg-muted/50 cursor-not-allowed opacity-60" 
+                  : "bg-background/50 focus:bg-background"
+              )} 
+            />
+            <Button 
+              onClick={handleSend} 
+              disabled={!message.trim() || status === 'closed' || isAIEnabled} 
+              className={cn(
+                "transition-all rounded-xl",
+                isAIEnabled
+                  ? "bg-muted text-muted-foreground cursor-not-allowed"
+                  : "bg-primary hover:bg-primary/90 glow-primary hover:scale-105"
+              )}
+            >
               <Send className="h-4 w-4" />
             </Button>
           </div>
