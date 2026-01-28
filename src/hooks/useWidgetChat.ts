@@ -630,125 +630,120 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
   }, [settings.proactive_message_enabled, settings.proactive_message, settings.proactive_message_delay_seconds, messages]);
 
   const initializeChat = useCallback(async () => {
-    // Fetch settings first
-    await fetchSettings();
+    // OPTIMIZATION: Fetch settings and AI agents in parallel - they're independent
+    const [, fetchedAgents] = await Promise.all([
+      fetchSettings(),
+      fetchAiAgents(),
+    ]);
+
+    // OPTIMIZATION: Show greeting immediately for fast perceived load time
+    const greetingAgent = fetchedAgents.length > 0 ? fetchedAgents[0] : null;
+    const greetingContent = greeting || settings.greeting || '';
     
-    // Fetch AI agents and get the result directly (don't rely on state)
-    const fetchedAgents = await fetchAiAgents();
-
-    if (!propertyId || propertyId === 'demo' || isPreview) {
-      // In preview/demo mode, use fetched agents directly
-      const greetingAgent = fetchedAgents.length > 0 ? fetchedAgents[0] : null;
-      if (greeting || settings.greeting) {
-        setMessages([{
-          id: 'greeting',
-          content: greeting || settings.greeting || '',
-          sender_type: 'agent',
-          created_at: new Date().toISOString(),
-          agent_name: greetingAgent?.name,
-          agent_avatar: greetingAgent?.avatar_url,
-        }]);
-      }
-      setLoading(false);
-      return;
-    }
-
-    const sessionId = getOrCreateSessionId();
-
-    // Check for existing visitor
-    let { data: visitor } = await supabase
-      .from('visitors')
-      .select('*')
-      .eq('property_id', propertyId)
-      .eq('session_id', sessionId)
-      .maybeSingle();
-
-    // Create visitor if doesn't exist
-    if (!visitor) {
-      const trackingParams = getTrackingParams();
-      const { data: newVisitor, error } = await supabase
-        .from('visitors')
-        .insert({
-          property_id: propertyId,
-          session_id: sessionId,
-          browser_info: getBrowserInfo(),
-          current_page: getEffectivePagePath(),
-          gclid: trackingParams.gclid,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating visitor:', error);
-        setLoading(false);
-        return;
-      }
-      visitor = newVisitor;
-      
-      // Fetch geolocation for new visitor (non-blocking)
-      fetchVisitorLocation(visitor.id);
-    } else {
-      // Update current page via secure edge function
-      updateVisitorSecure(visitor.id, sessionId, { current_page: getEffectivePagePath() });
-      
-      // If visitor already has name/email, don't require lead capture
-      if (visitor.name || visitor.email) {
-        setRequiresLeadCapture(false);
-        setVisitorInfo({ name: visitor.name || undefined, email: visitor.email || undefined });
-      }
-    }
-
-    setVisitorId(visitor.id);
-    visitorIdRef.current = visitor.id; // Update ref for extraction
-
-    // Check for existing conversation
-    let { data: conversation } = await supabase
-      .from('conversations')
-      .select('*')
-      .eq('property_id', propertyId)
-      .eq('visitor_id', visitor.id)
-      .neq('status', 'closed')
-      .maybeSingle();
-
-    if (conversation) {
-      setConversationId(conversation.id);
-      
-      // Check if already escalated
-      if (conversation.status === 'active' && conversation.assigned_agent_id) {
-        setIsEscalated(true);
-      }
-      
-      // Fetch existing messages ordered by sequence_number
-      const { data: existingMessages } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('conversation_id', conversation.id)
-        .order('sequence_number', { ascending: true });
-
-      // Count AI messages
-      aiMessageCountRef.current = (existingMessages || []).filter(
-        m => m.sender_type === 'agent' && m.sender_id === 'ai-bot'
-      ).length;
-
-      setMessages((existingMessages || []).map(m => ({
-        ...m,
-        sender_type: m.sender_type as 'agent' | 'visitor',
-      })));
-    } else if (settings.greeting || greeting) {
-      // Add greeting for new conversations - use fetched AI agent directly
-      const greetingAgent = fetchedAgents.length > 0 ? fetchedAgents[0] : null;
+    if (greetingContent) {
       setMessages([{
         id: 'greeting',
-        content: settings.greeting || greeting || '',
+        content: greetingContent,
         sender_type: 'agent',
         created_at: new Date().toISOString(),
         agent_name: greetingAgent?.name,
         agent_avatar: greetingAgent?.avatar_url,
       }]);
+    }
+    
+    // For preview/demo mode, we're done - don't create DB records
+    if (!propertyId || propertyId === 'demo' || isPreview) {
+      setLoading(false);
+      return;
+    }
 
-      // Create a conversation immediately for real embeds so chats show up in the portal
-      // even before escalation.
-      if (!isPreview && propertyId && propertyId !== 'demo') {
+    // Mark loading as done early - the greeting is visible
+    setLoading(false);
+
+    // OPTIMIZATION: Background persistence - don't block UI
+    const sessionId = getOrCreateSessionId();
+
+    try {
+      // Check for existing visitor
+      let { data: visitor } = await supabase
+        .from('visitors')
+        .select('*')
+        .eq('property_id', propertyId)
+        .eq('session_id', sessionId)
+        .maybeSingle();
+
+      // Create visitor if doesn't exist
+      if (!visitor) {
+        const trackingParams = getTrackingParams();
+        const { data: newVisitor, error } = await supabase
+          .from('visitors')
+          .insert({
+            property_id: propertyId,
+            session_id: sessionId,
+            browser_info: getBrowserInfo(),
+            current_page: getEffectivePagePath(),
+            gclid: trackingParams.gclid,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error creating visitor:', error);
+          return;
+        }
+        visitor = newVisitor;
+        
+        // Fire-and-forget geolocation fetch
+        fetchVisitorLocation(visitor.id).catch(() => {});
+      } else {
+        // Fire-and-forget page update
+        updateVisitorSecure(visitor.id, sessionId, { current_page: getEffectivePagePath() });
+        
+        // If visitor already has name/email, don't require lead capture
+        if (visitor.name || visitor.email) {
+          setRequiresLeadCapture(false);
+          setVisitorInfo({ name: visitor.name || undefined, email: visitor.email || undefined });
+        }
+      }
+
+      setVisitorId(visitor.id);
+      visitorIdRef.current = visitor.id;
+
+      // Check for existing conversation
+      let { data: conversation } = await supabase
+        .from('conversations')
+        .select('*')
+        .eq('property_id', propertyId)
+        .eq('visitor_id', visitor.id)
+        .neq('status', 'closed')
+        .maybeSingle();
+
+      if (conversation) {
+        setConversationId(conversation.id);
+        
+        if (conversation.status === 'active' && conversation.assigned_agent_id) {
+          setIsEscalated(true);
+        }
+        
+        // Fetch existing messages
+        const { data: existingMessages } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('conversation_id', conversation.id)
+          .order('sequence_number', { ascending: true });
+
+        aiMessageCountRef.current = (existingMessages || []).filter(
+          m => m.sender_type === 'agent' && m.sender_id === 'ai-bot'
+        ).length;
+
+        if (existingMessages && existingMessages.length > 0) {
+          setMessages(existingMessages.map(m => ({
+            ...m,
+            sender_type: m.sender_type as 'agent' | 'visitor',
+          })));
+        }
+      } else {
+        // Create a conversation for real embeds so chats show up in the portal
         const { data: newConversation, error: convError } = await supabase
           .from('conversations')
           .insert({
@@ -764,23 +759,23 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
         } else if (newConversation) {
           setConversationId(newConversation.id);
 
-          // Save the greeting as the first message so the portal transcript starts cleanly.
-          const greetingContent = settings.greeting || greeting || '';
+          // Save the greeting as the first message (fire-and-forget)
           if (greetingContent.trim()) {
-            const { error: greetErr } = await supabase.from('messages').insert({
+            supabase.from('messages').insert({
               conversation_id: newConversation.id,
               sender_id: 'ai-bot',
               sender_type: 'agent',
               content: greetingContent,
               sequence_number: 1,
+            }).then(({ error }) => {
+              if (error) console.error('Error saving greeting message:', error);
             });
-            if (greetErr) console.error('Error saving greeting message:', greetErr);
           }
         }
       }
+    } catch (error) {
+      console.error('Error in background initialization:', error);
     }
-
-    setLoading(false);
   }, [propertyId, greeting, fetchSettings, fetchAiAgents, settings.greeting, isPreview]);
 
   // Submit lead info
