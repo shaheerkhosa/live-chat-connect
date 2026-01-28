@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+declare global {
+  interface Window {
+    __scaledbot_session_id?: string;
+  }
+}
+
 interface Message {
   id: string;
   content: string;
@@ -70,12 +76,20 @@ const DEFAULT_SETTINGS: PropertySettings = {
 
 const getOrCreateSessionId = (): string => {
   const key = 'chat_session_id';
-  let sessionId = localStorage.getItem(key);
-  if (!sessionId) {
-    sessionId = `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    localStorage.setItem(key, sessionId);
+  try {
+    let sessionId = localStorage.getItem(key);
+    if (!sessionId) {
+      sessionId = `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem(key, sessionId);
+    }
+    return sessionId;
+  } catch {
+    // Some browsers block localStorage in 3rd-party iframes; fall back to in-memory.
+    if (!window.__scaledbot_session_id) {
+      window.__scaledbot_session_id = `sess-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    }
+    return window.__scaledbot_session_id;
   }
-  return sessionId;
 };
 
 const getBrowserInfo = (): string => {
@@ -162,6 +176,9 @@ const EXTRACT_INFO_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extr
 const LOCATION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-visitor-location`;
 const UPDATE_VISITOR_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-visitor`;
 const AI_AGENTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-property-ai-agents`;
+const SETTINGS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-property-settings`;
+const BOOTSTRAP_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget-bootstrap`;
+const SAVE_MESSAGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget-save-message`;
 
 // Secure visitor update through edge function
 const updateVisitorSecure = async (
@@ -369,6 +386,7 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
   const proactiveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const aiAgentIndexRef = useRef(0);
   const visitorIdRef = useRef<string | null>(null); // Ref to track current visitor ID for extraction
+  const conversationIdRef = useRef<string | null>(null);
 
   // Fetch AI agents for this property via edge function (works without auth)
   const fetchAiAgents = useCallback(async (): Promise<AIAgent[]> => {
@@ -422,66 +440,133 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     setCurrentAiAgent(aiAgents[aiAgentIndexRef.current]);
   }, [aiAgents]);
 
-  // Fetch property settings
-  const fetchSettings = useCallback(async () => {
-    if (!propertyId || propertyId === 'demo') return;
+  // Fetch property settings (works for live embeds without requiring auth)
+  const fetchSettings = useCallback(async (): Promise<PropertySettings> => {
+    if (!propertyId || propertyId === 'demo') return DEFAULT_SETTINGS;
 
-    const { data, error } = await supabase
-      .from('properties')
-      .select(`
-        ai_response_delay_min_ms,
-        ai_response_delay_max_ms,
-        typing_indicator_min_ms,
-        typing_indicator_max_ms,
-        smart_typing_enabled,
-        typing_wpm,
-        max_ai_messages_before_escalation,
-        escalation_keywords,
-        auto_escalation_enabled,
-        require_email_before_chat,
-        require_name_before_chat,
-        require_phone_before_chat,
-        require_insurance_card_before_chat,
-        natural_lead_capture_enabled,
-        proactive_message_enabled,
-        proactive_message,
-        proactive_message_delay_seconds,
-        greeting,
-        ai_base_prompt
-      `)
-      .eq('id', propertyId)
-      .single();
-
-    if (!error && data) {
-      setSettings({
-        ai_response_delay_min_ms: data.ai_response_delay_min_ms ?? DEFAULT_SETTINGS.ai_response_delay_min_ms,
-        ai_response_delay_max_ms: data.ai_response_delay_max_ms ?? DEFAULT_SETTINGS.ai_response_delay_max_ms,
-        typing_indicator_min_ms: data.typing_indicator_min_ms ?? DEFAULT_SETTINGS.typing_indicator_min_ms,
-        typing_indicator_max_ms: data.typing_indicator_max_ms ?? DEFAULT_SETTINGS.typing_indicator_max_ms,
-        smart_typing_enabled: data.smart_typing_enabled ?? DEFAULT_SETTINGS.smart_typing_enabled,
-        typing_wpm: data.typing_wpm ?? DEFAULT_SETTINGS.typing_wpm,
-        max_ai_messages_before_escalation: data.max_ai_messages_before_escalation ?? DEFAULT_SETTINGS.max_ai_messages_before_escalation,
-        escalation_keywords: data.escalation_keywords ?? DEFAULT_SETTINGS.escalation_keywords,
-        auto_escalation_enabled: data.auto_escalation_enabled ?? DEFAULT_SETTINGS.auto_escalation_enabled,
-        require_email_before_chat: data.require_email_before_chat ?? DEFAULT_SETTINGS.require_email_before_chat,
-        require_name_before_chat: data.require_name_before_chat ?? DEFAULT_SETTINGS.require_name_before_chat,
-        require_phone_before_chat: data.require_phone_before_chat ?? DEFAULT_SETTINGS.require_phone_before_chat,
-        require_insurance_card_before_chat: data.require_insurance_card_before_chat ?? DEFAULT_SETTINGS.require_insurance_card_before_chat,
-        natural_lead_capture_enabled: data.natural_lead_capture_enabled ?? DEFAULT_SETTINGS.natural_lead_capture_enabled,
-        proactive_message_enabled: data.proactive_message_enabled ?? DEFAULT_SETTINGS.proactive_message_enabled,
-        proactive_message: data.proactive_message,
-        proactive_message_delay_seconds: data.proactive_message_delay_seconds ?? DEFAULT_SETTINGS.proactive_message_delay_seconds,
-        greeting: data.greeting,
-        ai_base_prompt: data.ai_base_prompt ?? null,
+    try {
+      const response = await fetch(SETTINGS_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ propertyId }),
       });
 
-      // Check if lead capture is required - only if NOT using natural lead capture
-      const naturalEnabled = data.natural_lead_capture_enabled ?? true;
-      if (!naturalEnabled && (data.require_email_before_chat || data.require_name_before_chat)) {
-        setRequiresLeadCapture(true);
+      if (!response.ok) {
+        console.error('Failed to fetch property settings:', response.status, await response.text());
+        setSettings(DEFAULT_SETTINGS);
+        setRequiresLeadCapture(false);
+        return DEFAULT_SETTINGS;
       }
+
+      const data = await response.json();
+      const s = data?.settings ?? null;
+      if (!s) {
+        setSettings(DEFAULT_SETTINGS);
+        setRequiresLeadCapture(false);
+        return DEFAULT_SETTINGS;
+      }
+
+      const merged: PropertySettings = {
+        ...DEFAULT_SETTINGS,
+        ai_response_delay_min_ms: s.ai_response_delay_min_ms ?? DEFAULT_SETTINGS.ai_response_delay_min_ms,
+        ai_response_delay_max_ms: s.ai_response_delay_max_ms ?? DEFAULT_SETTINGS.ai_response_delay_max_ms,
+        typing_indicator_min_ms: s.typing_indicator_min_ms ?? DEFAULT_SETTINGS.typing_indicator_min_ms,
+        typing_indicator_max_ms: s.typing_indicator_max_ms ?? DEFAULT_SETTINGS.typing_indicator_max_ms,
+        smart_typing_enabled: s.smart_typing_enabled ?? DEFAULT_SETTINGS.smart_typing_enabled,
+        typing_wpm: s.typing_wpm ?? DEFAULT_SETTINGS.typing_wpm,
+        max_ai_messages_before_escalation: s.max_ai_messages_before_escalation ?? DEFAULT_SETTINGS.max_ai_messages_before_escalation,
+        escalation_keywords: s.escalation_keywords ?? DEFAULT_SETTINGS.escalation_keywords,
+        auto_escalation_enabled: s.auto_escalation_enabled ?? DEFAULT_SETTINGS.auto_escalation_enabled,
+        require_email_before_chat: s.require_email_before_chat ?? DEFAULT_SETTINGS.require_email_before_chat,
+        require_name_before_chat: s.require_name_before_chat ?? DEFAULT_SETTINGS.require_name_before_chat,
+        require_phone_before_chat: s.require_phone_before_chat ?? DEFAULT_SETTINGS.require_phone_before_chat,
+        require_insurance_card_before_chat: s.require_insurance_card_before_chat ?? DEFAULT_SETTINGS.require_insurance_card_before_chat,
+        natural_lead_capture_enabled: s.natural_lead_capture_enabled ?? DEFAULT_SETTINGS.natural_lead_capture_enabled,
+        proactive_message_enabled: s.proactive_message_enabled ?? DEFAULT_SETTINGS.proactive_message_enabled,
+        proactive_message: s.proactive_message ?? null,
+        proactive_message_delay_seconds: s.proactive_message_delay_seconds ?? DEFAULT_SETTINGS.proactive_message_delay_seconds,
+        greeting: s.greeting ?? null,
+        ai_base_prompt: s.ai_base_prompt ?? null,
+      };
+
+      setSettings(merged);
+
+      // Check if lead capture is required - only if NOT using natural lead capture
+      const naturalEnabled = merged.natural_lead_capture_enabled ?? true;
+      if (!naturalEnabled && (merged.require_email_before_chat || merged.require_name_before_chat)) {
+        setRequiresLeadCapture(true);
+      } else {
+        setRequiresLeadCapture(false);
+      }
+
+      return merged;
+    } catch (error) {
+      console.error('Error fetching property settings:', error);
+      setSettings(DEFAULT_SETTINGS);
+      setRequiresLeadCapture(false);
+      return DEFAULT_SETTINGS;
     }
   }, [propertyId]);
+
+  const ensureWidgetIds = useCallback(async (greetingText?: string) => {
+    if (!propertyId || propertyId === 'demo' || isPreview) return;
+    if (visitorIdRef.current && conversationIdRef.current) return;
+
+    const sessionId = getOrCreateSessionId();
+    const trackingParams = getTrackingParams();
+
+    try {
+      const response = await fetch(BOOTSTRAP_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          propertyId,
+          sessionId,
+          currentPage: getEffectivePagePath(),
+          browserInfo: getBrowserInfo(),
+          gclid: trackingParams.gclid,
+          greeting: greetingText ?? '',
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Widget bootstrap failed:', response.status, await response.text());
+        return;
+      }
+
+      const data = await response.json();
+      if (data?.visitorId) {
+        setVisitorId(data.visitorId);
+        visitorIdRef.current = data.visitorId;
+      }
+      if (data?.conversationId) {
+        setConversationId(data.conversationId);
+        conversationIdRef.current = data.conversationId;
+      }
+      if (data?.visitorInfo) {
+        setVisitorInfo({
+          name: data.visitorInfo?.name || undefined,
+          email: data.visitorInfo?.email || undefined,
+        });
+        if (data.visitorInfo?.name || data.visitorInfo?.email) {
+          setRequiresLeadCapture(false);
+        }
+      }
+
+      // Fire-and-forget geolocation fetch
+      if (data?.visitorId) {
+        fetchVisitorLocation(data.visitorId).catch(() => {});
+      }
+    } catch (e) {
+      console.error('Widget bootstrap error:', e);
+    }
+  }, [propertyId, isPreview]);
 
   // Check for escalation keywords in message
   const checkForEscalationKeywords = useCallback((content: string): boolean => {
@@ -630,25 +715,29 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
   }, [settings.proactive_message_enabled, settings.proactive_message, settings.proactive_message_delay_seconds, messages]);
 
   const initializeChat = useCallback(async () => {
-    // OPTIMIZATION: Fetch settings and AI agents in parallel - they're independent
-    const [, fetchedAgents] = await Promise.all([
+    // Fetch settings and AI agents in parallel - they're independent
+    const [fetchedSettings, fetchedAgents] = await Promise.all([
       fetchSettings(),
       fetchAiAgents(),
     ]);
 
     // OPTIMIZATION: Show greeting immediately for fast perceived load time
     const greetingAgent = fetchedAgents.length > 0 ? fetchedAgents[0] : null;
-    const greetingContent = greeting || settings.greeting || '';
-    
+    const greetingContent = greeting || fetchedSettings.greeting || '';
+
+    // IMPORTANT: never clobber messages if initializeChat is called again.
     if (greetingContent) {
-      setMessages([{
-        id: 'greeting',
-        content: greetingContent,
-        sender_type: 'agent',
-        created_at: new Date().toISOString(),
-        agent_name: greetingAgent?.name,
-        agent_avatar: greetingAgent?.avatar_url,
-      }]);
+      setMessages(prev => {
+        if (prev.length > 0) return prev;
+        return [{
+          id: 'greeting',
+          content: greetingContent,
+          sender_type: 'agent',
+          created_at: new Date().toISOString(),
+          agent_name: greetingAgent?.name,
+          agent_avatar: greetingAgent?.avatar_url,
+        }];
+      });
     }
     
     // For preview/demo mode, we're done - don't create DB records
@@ -660,123 +749,9 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     // Mark loading as done early - the greeting is visible
     setLoading(false);
 
-    // OPTIMIZATION: Background persistence - don't block UI
-    const sessionId = getOrCreateSessionId();
-
-    try {
-      // Check for existing visitor
-      let { data: visitor } = await supabase
-        .from('visitors')
-        .select('*')
-        .eq('property_id', propertyId)
-        .eq('session_id', sessionId)
-        .maybeSingle();
-
-      // Create visitor if doesn't exist
-      if (!visitor) {
-        const trackingParams = getTrackingParams();
-        const { data: newVisitor, error } = await supabase
-          .from('visitors')
-          .insert({
-            property_id: propertyId,
-            session_id: sessionId,
-            browser_info: getBrowserInfo(),
-            current_page: getEffectivePagePath(),
-            gclid: trackingParams.gclid,
-          })
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Error creating visitor:', error);
-          return;
-        }
-        visitor = newVisitor;
-        
-        // Fire-and-forget geolocation fetch
-        fetchVisitorLocation(visitor.id).catch(() => {});
-      } else {
-        // Fire-and-forget page update
-        updateVisitorSecure(visitor.id, sessionId, { current_page: getEffectivePagePath() });
-        
-        // If visitor already has name/email, don't require lead capture
-        if (visitor.name || visitor.email) {
-          setRequiresLeadCapture(false);
-          setVisitorInfo({ name: visitor.name || undefined, email: visitor.email || undefined });
-        }
-      }
-
-      setVisitorId(visitor.id);
-      visitorIdRef.current = visitor.id;
-
-      // Check for existing conversation
-      let { data: conversation } = await supabase
-        .from('conversations')
-        .select('*')
-        .eq('property_id', propertyId)
-        .eq('visitor_id', visitor.id)
-        .neq('status', 'closed')
-        .maybeSingle();
-
-      if (conversation) {
-        setConversationId(conversation.id);
-        
-        if (conversation.status === 'active' && conversation.assigned_agent_id) {
-          setIsEscalated(true);
-        }
-        
-        // Fetch existing messages
-        const { data: existingMessages } = await supabase
-          .from('messages')
-          .select('*')
-          .eq('conversation_id', conversation.id)
-          .order('sequence_number', { ascending: true });
-
-        aiMessageCountRef.current = (existingMessages || []).filter(
-          m => m.sender_type === 'agent' && m.sender_id === 'ai-bot'
-        ).length;
-
-        if (existingMessages && existingMessages.length > 0) {
-          setMessages(existingMessages.map(m => ({
-            ...m,
-            sender_type: m.sender_type as 'agent' | 'visitor',
-          })));
-        }
-      } else {
-        // Create a conversation for real embeds so chats show up in the portal
-        const { data: newConversation, error: convError } = await supabase
-          .from('conversations')
-          .insert({
-            property_id: propertyId,
-            visitor_id: visitor.id,
-            status: 'pending',
-          })
-          .select()
-          .single();
-
-        if (convError) {
-          console.error('Error creating conversation:', convError);
-        } else if (newConversation) {
-          setConversationId(newConversation.id);
-
-          // Save the greeting as the first message (fire-and-forget)
-          if (greetingContent.trim()) {
-            supabase.from('messages').insert({
-              conversation_id: newConversation.id,
-              sender_id: 'ai-bot',
-              sender_type: 'agent',
-              content: greetingContent,
-              sequence_number: 1,
-            }).then(({ error }) => {
-              if (error) console.error('Error saving greeting message:', error);
-            });
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error in background initialization:', error);
-    }
-  }, [propertyId, greeting, fetchSettings, fetchAiAgents, settings.greeting, isPreview]);
+    // Background bootstrap (visitor + conversation ids) for real embeds
+    void ensureWidgetIds(greetingContent);
+  }, [propertyId, greeting, fetchSettings, fetchAiAgents, isPreview, ensureWidgetIds]);
 
   // Submit lead info
   const submitLeadInfo = async (name?: string, email?: string) => {
@@ -810,40 +785,9 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     
     setMessages(prev => [...prev, visitorMessage]);
 
-    // Ensure we have a persisted conversation for real embeds before we do anything else.
-    // This prevents the "AI responds but nothing shows in the portal" issue.
+    // For real embeds, make sure IDs exist (never resets UI state)
     if (!isPreview && propertyId && propertyId !== 'demo') {
-      // If visitor hasn't been established yet, try to initialize now.
-      if (!visitorIdRef.current && !visitorId) {
-        try {
-          await initializeChat();
-        } catch (e) {
-          console.error('Failed to initialize chat before persisting message:', e);
-        }
-      }
-
-      const currentVisitorIdForDb = visitorIdRef.current || visitorId;
-      if (currentVisitorIdForDb) {
-        let currentConversationId = conversationId;
-        if (!currentConversationId) {
-          const { data: newConversation, error: convError } = await supabase
-            .from('conversations')
-            .insert({
-              property_id: propertyId,
-              visitor_id: currentVisitorIdForDb,
-              status: 'pending',
-            })
-            .select()
-            .single();
-
-          if (convError) {
-            console.error('Error creating conversation (sendMessage):', convError);
-          } else if (newConversation) {
-            currentConversationId = newConversation.id;
-            setConversationId(currentConversationId);
-          }
-        }
-      }
+      await ensureWidgetIds();
     }
 
     // Track chat_open event on first message
@@ -861,8 +805,22 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     // Only stop AI if human has actually taken over (not just escalated)
     if (humanHasTakenOver) {
       // Just save the message to DB - human agent is handling
-      if (conversationId && visitorId) {
-        // Get next sequence number
+      if (!isPreview && propertyId && propertyId !== 'demo') {
+        const convId = conversationIdRef.current || conversationId;
+        const vId = visitorIdRef.current || visitorId;
+        if (convId && vId) {
+          const sessionId = getOrCreateSessionId();
+          await fetch(SAVE_MESSAGE_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ conversationId: convId, visitorId: vId, sessionId, senderType: 'visitor', content }),
+          });
+        }
+      } else if (conversationId && visitorId) {
+        // Preview/portal context keeps existing behavior
         const { data: maxSeqData } = await supabase
           .from('messages')
           .select('sequence_number')
@@ -870,18 +828,14 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
           .order('sequence_number', { ascending: false })
           .limit(1)
           .maybeSingle();
-        
         const nextSeq = (maxSeqData?.sequence_number || 0) + 1;
-        
-        await supabase
-          .from('messages')
-          .insert({
-            conversation_id: conversationId,
-            sender_id: visitorId,
-            sender_type: 'visitor',
-            content,
-            sequence_number: nextSeq,
-          });
+        await supabase.from('messages').insert({
+          conversation_id: conversationId,
+          sender_id: visitorId,
+          sender_type: 'visitor',
+          content,
+          sequence_number: nextSeq,
+        });
       }
       return;
     }
@@ -1078,10 +1032,48 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
     const currentVisitorIdForDb = visitorIdRef.current || visitorId;
     
     if (shouldSaveToDb && currentVisitorIdForDb) {
-      let currentConversationId = conversationId;
+      // Real embeds: persist via backend function so we don't need SELECT policies.
+      if (!isPreview && propertyId && propertyId !== 'demo') {
+        await ensureWidgetIds();
+        const convId = conversationIdRef.current || conversationId;
+        const vId = visitorIdRef.current || visitorId;
+        if (!convId || !vId) return;
 
-      // Create conversation if doesn't exist (only for non-preview mode)
-        if (!currentConversationId && !isPreview) {
+        const sessionId = getOrCreateSessionId();
+
+        try {
+          const save = async (senderType: 'visitor' | 'agent', msgContent: string) => {
+            const resp = await fetch(SAVE_MESSAGE_URL, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              },
+              body: JSON.stringify({
+                conversationId: convId,
+                visitorId: vId,
+                sessionId,
+                senderType,
+                content: msgContent,
+              }),
+            });
+            if (!resp.ok) {
+              console.error('Failed to save message:', senderType, await resp.text());
+            }
+          };
+
+          await save('visitor', content);
+          if (aiContent) await save('agent', aiContent);
+        } catch (e) {
+          console.error('Error saving messages via backend:', e);
+        }
+
+        return;
+      }
+
+      // Preview mode: keep existing behavior
+      let currentConversationId = conversationId;
+      if (!currentConversationId && !isPreview) {
         const { data: newConversation, error } = await supabase
           .from('conversations')
           .insert({
@@ -1092,18 +1084,14 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
           .select()
           .single();
 
-          if (error) {
-            console.error('Error creating conversation:', error);
-          }
-
-          if (!error && newConversation) {
+        if (error) console.error('Error creating conversation:', error);
+        if (!error && newConversation) {
           currentConversationId = newConversation.id;
           setConversationId(currentConversationId);
         }
       }
 
-        if (currentConversationId) {
-        // Get next sequence number for this conversation
+      if (currentConversationId) {
         const { data: maxSeqData } = await supabase
           .from('messages')
           .select('sequence_number')
@@ -1112,35 +1100,28 @@ export const useWidgetChat = ({ propertyId, greeting, isPreview = false }: Widge
           .limit(1)
           .maybeSingle();
 
-        let nextSeq = (maxSeqData?.sequence_number || 0) + 1;
+        const nextSeq = (maxSeqData?.sequence_number || 0) + 1;
 
-        // Save visitor message
-         const { error: msgErr } = await supabase
-          .from('messages')
-          .insert({
+        const { error: msgErr } = await supabase.from('messages').insert({
+          conversation_id: currentConversationId,
+          sender_id: currentVisitorIdForDb,
+          sender_type: 'visitor',
+          content,
+          sequence_number: nextSeq,
+        });
+        if (msgErr) console.error('Error saving visitor message:', msgErr);
+
+        if (aiContent) {
+          const { error: aiMsgErr } = await supabase.from('messages').insert({
             conversation_id: currentConversationId,
-            sender_id: currentVisitorIdForDb,
-            sender_type: 'visitor',
-            content,
-            sequence_number: nextSeq,
+            sender_id: 'ai-bot',
+            sender_type: 'agent',
+            content: aiContent,
+            sequence_number: nextSeq + 1,
           });
-         if (msgErr) console.error('Error saving visitor message:', msgErr);
-
-        // Save AI response with next sequence number
-          if (aiContent) {
-          const { error: aiMsgErr } = await supabase
-            .from('messages')
-            .insert({
-              conversation_id: currentConversationId,
-              sender_id: 'ai-bot',
-              sender_type: 'agent',
-              content: aiContent,
-              sequence_number: nextSeq + 1,
-            });
           if (aiMsgErr) console.error('Error saving AI message:', aiMsgErr);
         }
 
-        // Also trigger extraction after saving new messages in preview mode
         if (isPreview && conversationHistory.length >= 2) {
           extractVisitorInfo(currentVisitorIdForDb, [...conversationHistory, { role: 'assistant', content: aiContent }]);
         }
